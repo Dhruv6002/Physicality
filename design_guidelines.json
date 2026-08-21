@@ -1,0 +1,163 @@
+{
+  "theme": "light",
+  "typography": {
+    "primary_heading_font": "Cormorant Garamond",
+    "secondary_heading_font": "Bodoni Moda",
+    "body_font": "Inter",
+    "utility_font": "IBM Plex Mono",
+    "rules": [
+      "H1 (Hero): text-5xl md:text-6xl+ tracking-tighter leading-none. MUST be Cormorant Garamond or Bodoni Moda.",
+      "H2 (Section): text-3xl md:text-4xl tracking-tight leading-[1.1].",
+      "Body: text-base text-[#1C1C1A] leading-relaxed.",
+      "Labels/Metadata: text-xs uppercase tracking-[0.2em] font-mono (IBM Plex Mono). Used for edition numbers, catalog IDs, and small labels.",
+      "No generic 'Inter' for any headings.",
+      "Embrace italics in headings for editorial flair (e.g., 'The <span class=\"italic\">Collector\\'s</span> Edition')."
+    ]
+  },
+  "colors": {
+    "background": {
+      "primary": "#F4F0EA",
+      "secondary": "#EAE4D9",
+      "overlay": "rgba(28, 28, 26, 0.4)"
+    },
+    "text": {
+      "primary": "#1C1C1A",
+      "secondary": "#5C5A56",
+      "accent": "#C85A43"
+    },
+    "border": {
+      "default": "#DED8CE",
+      "dark": "#1C1C1A"
+    },
+    "accent": {
+      "terracotta": "#C85A43",
+      "terracotta_hover": "#B04D38"
+    },
+    "rules": [
+      "Use #F4F0EA (Warm Cream) as the definitive background color.",
+      "Use #C85A43 (Terracotta) exclusively for primary CTAs, hover states, and critical accents.",
+      "Strictly AVOID neon, pure white (#FFFFFF), pure black (#000000), or gradients.",
+      "Text should be a very dark charcoal (#1C1C1A) to mimic printer ink."
+    ]
+  },
+  "visual_enhancers": {
+    "textures": [
+      "Subtle SVG noise or CSS grain overlay on the entire body to mimic paper texture (opacity: 0.03)."
+    ],
+    "decorations": [
+      "Print Registration Marks: Add delicate '+' marks (absolute positioned) in corners of large hero or catalog images.",
+      "CSS Letterpress Rules: Use 1px solid #DED8CE for section dividers. Sometimes use a double border (3px double #1C1C1A) to separate headers from content."
+    ],
+    "shadows": [
+      "NO standard drop shadows. Use 1px solid borders to define edges. If shadow is absolutely needed for a dropdown, use a sharp solid shadow (e.g., 4px 4px 0px #1C1C1A)."
+    ],
+    "border_radius": [
+      "0px everywhere. Sharp corners exclusively to emulate cut paper and physical print."
+    ]
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-[#C85A43] text-[#F4F0EA] rounded-none px-6 py-3 uppercase tracking-widest text-xs font-mono hover:bg-[#B04D38] transition-colors",
+      "secondary": "bg-transparent border border-[#1C1C1A] text-[#1C1C1A] rounded-none px-6 py-3 uppercase tracking-widest text-xs font-mono hover:bg-[#1C1C1A] hover:text-[#F4F0EA] transition-colors"
+    },
+    "inputs": {
+      "default": "rounded-none border-b border-[#1C1C1A] border-t-0 border-l-0 border-r-0 bg-transparent focus:ring-0 focus:border-[#C85A43] px-0 py-2 text-base"
+    },
+    "shadcn_overrides": {
+      "cards": "Remove all rounded corners and soft shadows. Use border border-[#DED8CE] bg-transparent.",
+      "dialogs_drawers": "Must slide in or fade in with 0px border radius, bg-[#F4F0EA], and sharp borders.",
+      "tables": "Use for order history. Border-collapse, sharp borders, font-mono for IDs."
+    }
+  },
+  "grids_layouts": {
+    "catalog": "Swiss/Bento inspired. Not standard cards. Use a CSS grid where grid lines are visible (border-r and border-b on items).",
+    "spacing": "Generous. Use py-24 or py-32 for sections. Large margins to create 'breathing room' like a magazine spread."
+  },
+  "motion": {
+    "lenis": "Mandatory. Install and setup @studio-freight/react-lenis for smooth scroll.",
+    "framer_motion": {
+      "masked_reveal": "For H1 hero text. Map text into lines. Wrap each line in an overflow-hidden div. Animate the inner text from y: '100%' to y: '0%' with a spring or custom cubic-bezier.",
+      "scroll_reveal": "Fade and slight translateY (e.g., 20px) on sections as they enter viewport.",
+      "parallax_hero": "Use useScroll and useTransform to move a central hero image slightly slower than the scroll speed."
+    },
+    "marquee": "Use react-fast-marquee. Very slow speed (e.g., speed={20}). Text should be large, italicized serif, or uppercase mono separated by '✦'."
+  },
+  "media": {
+    "3d_libraries": "Not strictly required unless adding a simple Framer Motion 3D card tilt for the CD cover, but stick to 2D parallax for elegance."
+  },
+  "image_urls": {
+    "hero_or_catalog_placeholder_1": {
+      "url": "https://images.unsplash.com/photo-1770259406678-420c4adc44f5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2MzR8MHwxfHNlYXJjaHwyfHxtaW5pbWFsaXN0JTIwcG9zdGVyJTIwZnJhbWV8ZW58MHx8fHwxNzg3MzExMjMwfDA&ixlib=rb-4.1.0&q=85",
+      "description": "White blank sign on a textured wall. Good for custom poster upload preview."
+    },
+    "hero_or_catalog_placeholder_2": {
+      "url": "https://images.unsplash.com/photo-1695634184046-93d24e779ea7?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2MzR8MHwxfHNlYXJjaHwzfHxtaW5pbWFsaXN0JTIwcG9zdGVyJTIwZnJhbWV8ZW58MHx8fHwxNzg3MzExMjMwfDA&ixlib=rb-4.1.0&q=85",
+      "description": "Minimalist poster frame on floor. Good for A4/A5 poster catalog."
+    },
+    "cd_physical_cover_1": {
+      "url": "https://images.pexels.com/photos/93388/pexels-photo-93388.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "description": "Unused CD jewel case. Use for the 'Physical edition cover art' product."
+    },
+    "game_art_example_1": {
+      "url": "https://images.pexels.com/photos/26594027/pexels-photo-26594027.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "description": "Abstract purple game controller. Use as a poster artwork example."
+    },
+    "game_art_example_2": {
+      "url": "https://images.pexels.com/photos/8108656/pexels-photo-8108656.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "description": "Vibrant geometric tetris shape. Use as a poster artwork example."
+    },
+    "texture_overlay": {
+      "url": "https://images.pexels.com/photos/8465944/pexels-photo-8465944.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "description": "Draped beige fabric for subtle background masking or parallax usage."
+    }
+  },
+  "domain_specific_instructions": {
+    "promo_logic": {
+      "code": "FREEHOSTEL5050",
+      "rules": [
+        "If applied in cart, give 50% off poster products only.",
+        "Store a flag 'promo_applied: true' on the order object.",
+        "In Customer Dashboard: If 'promo_applied' is true, DO NOT display the tracking number or courier brand. ONLY show the timeline (packed/shipped/delivered)."
+      ]
+    },
+    "products": [
+      {
+        "type": "Game Poster",
+        "options": ["A4 Size", "A5 Size"],
+        "customization": "None for standard"
+      },
+      {
+        "type": "Custom Poster",
+        "options": ["A4 Size", "A5 Size"],
+        "customization": "Image Upload flow"
+      },
+      {
+        "type": "Physical Cover Art",
+        "options": ["Game Name (Text Input)", "Platform (PS5, PS4, Xbox)"],
+        "note": "CD Box with printed cover only. No game disc."
+      }
+    ]
+  },
+  "instructions_to_main_agent": [
+    "INSTALL LIBRARIES: framer-motion, @studio-freight/react-lenis, react-fast-marquee, lucide-react.",
+    "Do NOT use typical glowing tech/gaming aesthetic. This MUST look like a high-end physical print catalog or vinyl reissue label.",
+    "Implement a numbered 'Manifesto Chapters' section (e.g., 'I. THE PRINT', 'II. THE ARCHIVE') using the serif font.",
+    "For the hero, use Framer Motion to create a 'kinetic editorial hero with masked line-by-line reveal' (overflow hidden, text translates up).",
+    "Implement a mock or real Razorpay checkout flow in the cart.",
+    "Create two main dashboards: Customer (showing order history + timeline + tracking) and Admin (table to update status, add courier/tracking ID).",
+    "Strictly enforce the FREEHOSTEL5050 promo code logic (50% off posters, removes tracking ID visibility for customer).",
+    "All components must be heavily customized to remove standard Tailwind/Shadcn rounded corners. Use 0px border-radius.",
+    "All interactive and key informational elements MUST include a 'data-testid' attribute (e.g., data-testid='checkout-button', data-testid='promo-input')."
+  ],
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": [
+    "You tend to converge toward generic, 'on distribution' outputs. In frontend design, this creates what users call the 'AI slop' aesthetic. Avoid this: make creative, distinctive frontends that surprise and delight.",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "NEVER use generic AI emoji characters like 🤖🧠💭💡🔮🎯 for icons.",
+    "Every interaction needs micro-animations - hover states, transitions, parallax effects, and entrance animations.",
+    "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
+    "Prioritize using pre-existing components from src/components/ui when applicable.",
+    "Use sonner for toasts.",
+    "NEVER use placeholder URLs (via.placeholder.com) - use the exact URLs provided in this JSON.",
+    "DO NOT use transparent background in header, overlays, any surface that has content under it. Ensure nav text is readable."
+  ]
+}

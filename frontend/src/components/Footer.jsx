@@ -1,0 +1,45 @@
+import { Link } from "react-router-dom";
+
+export default function Footer() {
+  return (
+    <footer className="border-t border-ink bg-paper" data-testid="main-footer">
+      <div className="mx-auto max-w-7xl px-5 md:px-8 py-16 grid grid-cols-1 md:grid-cols-12 gap-12">
+        <div className="md:col-span-6">
+          <p className="font-display-press text-3xl tracking-tight text-ink">
+            Physical Editions<span className="text-terra">.</span>
+          </p>
+          <p className="mt-4 text-sm text-smoke leading-relaxed max-w-xs">
+            Studio-crafted posters and physical cover boxes for the games you love.
+            In an all-digital world, we keep the collection alive.
+          </p>
+        </div>
+        <div className="md:col-span-3">
+          <p className="font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke mb-4">Shop</p>
+          <div className="flex flex-col gap-3 font-mono-press text-xs uppercase tracking-[0.15em]">
+            <Link to="/shop" className="text-ink link-underline w-fit">Poster catalog</Link>
+            <Link to="/custom" className="text-ink link-underline w-fit">Custom poster</Link>
+            <Link to="/cover-art" className="text-ink link-underline w-fit">CD cover boxes</Link>
+          </div>
+        </div>
+        <div className="md:col-span-3">
+          <p className="font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke mb-4">Support</p>
+          <div className="flex flex-col gap-3 font-mono-press text-xs uppercase tracking-[0.15em]">
+            <Link to="/account" className="text-ink link-underline w-fit">Track order</Link>
+            <Link to="/account" className="text-ink link-underline w-fit">My orders</Link>
+            <Link to="/admin" className="text-ink link-underline w-fit">Admin</Link>
+          </div>
+        </div>
+      </div>
+      <div className="border-t border-ink">
+        <div className="mx-auto max-w-7xl px-5 md:px-8 py-5 flex flex-col sm:flex-row justify-between gap-3">
+          <p className="font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke">
+            Printed to order in India · Cover boxes ship without game discs
+          </p>
+          <p className="font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke">
+            Every DVD cover box includes a free A5 poster
+          </p>
+        </div>
+      </div>
+    </footer>
+  );
+}

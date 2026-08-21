@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import api from "../lib/api";
+import api, { productImage } from "../lib/api";
 import { useCart } from "../context/CartContext";
 import { Reveal, SectionHeading, RegistrationMarks } from "../components/Motion";
 
@@ -72,7 +72,7 @@ export default function Shop() {
 
   const addCatalog = (p) => {
     const { size, framing } = cardSel(p.id);
-    addItem({ kind: "poster", product_id: p.id, title: p.title, game: p.game, size, framing, unit_price: priceFor(pricing, size, framing), qty: 1, image_url: p.image_url });
+    addItem({ kind: "poster", product_id: p.id, title: p.title, game: p.game, size, framing, unit_price: priceFor(pricing, size, framing), qty: 1, image_url: p.image_url, image_path: p.image_path });
     toast.success(`${p.title} · ${size} ${framing} — pressed into your cart`);
   };
 
@@ -136,7 +136,7 @@ export default function Shop() {
               <Reveal key={p.id} delay={(i % 4) * 0.07} className="bg-paper flex flex-col group" data-testid={`poster-card-${p.id}`}>
                 <div className="relative overflow-hidden border-b border-line">
                   <img
-                    src={p.image_url}
+                    src={productImage(p)}
                     alt={p.title}
                     className="w-full aspect-[1/1.25] object-cover grayscale-[35%] transition-all duration-700 group-hover:grayscale-0 group-hover:scale-[1.03]"
                   />

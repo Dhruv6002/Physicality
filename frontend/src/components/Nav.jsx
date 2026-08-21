@@ -25,10 +25,10 @@ export default function Nav() {
       <div className="mx-auto max-w-7xl px-5 md:px-8 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-baseline gap-3" data-testid="nav-brand-link">
           <span className="font-display-press text-xl tracking-tight text-ink">Physical&nbsp;Editions</span>
-          <span className="hidden sm:inline font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke">Press Nº 01</span>
+          <span className="hidden lg:inline font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke">Press Nº 01</span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-8">
+        <nav className="hidden md:flex items-center gap-6">
           {LINKS.map((l) => (
             <Link key={l.to} to={l.to} className={linkCls} data-testid={`nav-${l.label.toLowerCase().replace(/\s+/g, "-")}`}>
               {l.label}

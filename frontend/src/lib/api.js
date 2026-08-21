@@ -25,4 +25,9 @@ export function fileUrl(path) {
   return `${API}/files/${path}${token ? `?auth=${token}` : ""}`;
 }
 
+export function productImage(p) {
+  if (p?.image_path) return fileUrl(p.image_path);
+  return p?.image_url || "";
+}
+
 export default api;

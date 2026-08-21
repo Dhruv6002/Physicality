@@ -9,7 +9,14 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Annotated, List, Optional
 
+import ipaddress
+import re
+from html import escape
+from html.parser import HTMLParser
+from urllib.parse import urlparse
+
 import bcrypt
+import httpx
 import jwt
 import requests as http_requests
 from bson import ObjectId
@@ -88,6 +95,139 @@ def get_object(path: str):
     return resp.content, resp.headers.get("Content-Type", "application/octet-stream")
 
 
+# ---------- Transactional email (Emergent managed Resend) ----------
+EMAIL_BASE_URL = "https://integrations.emergentagent.com"
+EMAIL_KEY = os.environ.get("EMERGENT_EMAIL_KEY", "")
+EMAIL_FROM_NAME = os.environ.get("EMAIL_FROM_NAME", "Physical Editions")
+APP_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+
+_SHORTENERS = ("bit.ly", "tinyurl.com", "t.co", "is.gd", "cutt.ly", "goo.gl", "rebrand.ly")
+_CRED_ASK = ("reply with your password", "reply with the code", "send your password", "cvv",
+             "send us your password", "enter your password below", "confirm your card number",
+             "your full card number", "seed phrase", "recovery phrase", "verify your card",
+             "social security number", "confirm your bank details")
+_HOSTISH = re.compile(r"\b(?:https?://)?((?:[a-z0-9-]+\.)+[a-z]{2,})", re.I)
+
+
+def _host_ok(host: str) -> bool:
+    if not host or "xn--" in host:
+        return False
+    try:
+        ipaddress.ip_address(host)
+        return False
+    except ValueError:
+        pass
+    return not any(host == s or host.endswith("." + s) for s in _SHORTENERS)
+
+
+def _same_site(shown: str, real: str) -> bool:
+    return shown == real or real.endswith("." + shown) or shown.endswith("." + real)
+
+
+class _EmailScan(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.tags, self.urls, self.anchors = set(), [], []
+        self._href, self._text = None, []
+
+    def handle_starttag(self, tag, attrs):
+        self.tags.add(tag.lower())
+        self.urls += [v for k, v in attrs if k.lower() in ("href", "src") and v]
+        if tag.lower() == "a":
+            self._href = dict((k.lower(), v) for k, v in attrs).get("href")
+            self._text = []
+
+    def handle_data(self, data):
+        if self._href is not None:
+            self._text.append(data)
+
+    def handle_endtag(self, tag):
+        if tag.lower() == "a" and self._href is not None:
+            self.anchors.append((self._href, "".join(self._text)))
+            self._href, self._text = None, []
+
+
+def _assert_safe_email(subject: str, html: str) -> None:
+    scan = _EmailScan()
+    scan.feed(html)
+    if scan.tags & {"form", "input", "textarea", "select"}:
+        raise ValueError("No forms or input fields in email (G2)")
+    body = f"{subject}\n{html}".lower()
+    for p in _CRED_ASK:
+        if p in body:
+            raise ValueError(f"Email asks the recipient for credentials: {p!r} (G2)")
+    for url in scan.urls:
+        low = url.strip().lower()
+        if low.startswith(("mailto:", "tel:", "cid:", "#")):
+            continue
+        if not low.startswith("https://"):
+            raise ValueError(f"Email links/assets must be absolute https: {url!r} (G3)")
+        host = urlparse(low).hostname or ""
+        if not _host_ok(host) or urlparse(low).username is not None:
+            raise ValueError(f"Shortened, numeric-host or credential-bearing URL: {url!r} (G3)")
+    for href, text in scan.anchors:
+        real = urlparse(href.strip().lower()).hostname or ""
+        if not real:
+            continue
+        for m in _HOSTISH.finditer(text):
+            if not _same_site(m.group(1).lower(), real):
+                raise ValueError(f"Anchor text {m.group(1)!r} ≠ real link host {real!r} (G3)")
+
+
+async def send_email(*, to: str, subject: str, html: str):
+    _assert_safe_email(subject, html)
+    payload = {"to": [to], "subject": subject, "html": html, "from_name": EMAIL_FROM_NAME}
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.post(f"{EMAIL_BASE_URL}/api/v1/email/send",
+                                 headers={"X-Email-Key": EMAIL_KEY}, json=payload)
+    resp.raise_for_status()
+    return resp.json().get("id")
+
+
+STATUS_HEADLINES = {
+    "packed": "Your order is packed.",
+    "shipped": "Your order has shipped.",
+    "delivered": "Your order was delivered.",
+}
+
+
+def status_email_html(order: dict, new_status: str) -> str:
+    steps = ["placed", "packed", "shipped", "delivered"]
+    current = steps.index(new_status)
+    progress = "".join(
+        f'<span style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;'
+        f'color:{"#C85A43" if i <= current else "#B9B2A6"}">{s}</span>'
+        + ('<span style="color:#DED8CE;padding:0 8px">&mdash;</span>' if i < 3 else "")
+        for i, s in enumerate(steps))
+    rows = "".join(
+        f'<tr><td style="padding:8px 0;border-bottom:1px solid #DED8CE;font-size:14px;color:#1C1C1A">'
+        f'<em>{escape(i["title"])}</em>'
+        f'<span style="font-family:Arial,sans-serif;font-size:11px;color:#5C5A56"> &middot; '
+        f'{escape(str(i.get("size") or i.get("platform") or ""))} &times; {i["qty"]}</span></td></tr>'
+        for i in order.get("items", []))
+    tracking = ""
+    if new_status in ("shipped", "delivered") and not order.get("promo_applied") and order.get("tracking_id"):
+        courier = f' &mdash; {escape(order["courier"])}' if order.get("courier") else ""
+        tracking = (f'<p style="font-family:Arial,sans-serif;font-size:13px;color:#1C1C1A;margin:20px 0 0">'
+                    f'Tracking &middot; <strong>{escape(order["tracking_id"])}</strong>{courier}</p>')
+    name = escape(order.get("shipping", {}).get("name", "collector").split(" ")[0])
+    return (
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#EAE4D9;padding:32px 16px">'
+        '<tr><td align="center">'
+        '<table role="presentation" width="560" cellpadding="0" cellspacing="0" style="background:#F4F0EA;border:1px solid #1C1C1A;padding:40px">'
+        '<tr><td>'
+        '<p style="font-family:Georgia,serif;font-size:22px;margin:0;color:#1C1C1A">Physical Editions<span style="color:#C85A43">.</span></p>'
+        '<p style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#5C5A56;margin:6px 0 28px">A physical games press</p>'
+        f'<p style="font-family:Georgia,serif;font-size:30px;margin:0 0 6px;color:#1C1C1A">{STATUS_HEADLINES[new_status]}</p>'
+        f'<p style="font-family:Arial,sans-serif;font-size:13px;color:#5C5A56;margin:0 0 24px">Hi {name}, order <strong>{escape(order["order_no"])}</strong> just moved on the press bench.</p>'
+        f'<p style="margin:0 0 24px">{progress}</p>'
+        f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0">{rows}</table>'
+        f'{tracking}'
+        f'<p style="margin:28px 0 0"><a href="{APP_URL}/account" style="font-family:Arial,sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#F4F0EA;background:#C85A43;padding:12px 20px;text-decoration:none">View your order</a></p>'
+        f'<p style="font-family:Arial,sans-serif;font-size:11px;color:#B9B2A6;margin:32px 0 0">Sent by {escape(EMAIL_FROM_NAME)}. We never ask for passwords or card details by email.</p>'
+        '</td></tr></table></td></tr></table>')
+
+
 # ---------- Mongo document helpers ----------
 PyObjectId = Annotated[str, BeforeValidator(lambda v: str(v))]
 
@@ -118,8 +258,9 @@ class Product(BaseDocument):
     title: str
     game: str
     edition: str
-    blurb: str
-    image_url: str
+    blurb: str = ""
+    image_url: Optional[str] = None
+    image_path: Optional[str] = None
     prices: dict
 
 
@@ -466,6 +607,7 @@ async def create_order(body: OrderCreate, user: dict = Depends(get_current_user)
         elif item.kind == "cover":
             if not item.game_name or item.platform not in PLATFORMS:
                 raise HTTPException(status_code=400, detail="Cover art needs a game name and platform")
+            unit = COVER_PRICE
             line_items.append({"kind": "cover", "title": f"{item.game_name.strip()} — DVD Cover Box",
                                "game": item.game_name.strip(), "platform": item.platform, "qty": qty,
                                "unit_price": COVER_PRICE, "includes_free_a5": True})
@@ -605,7 +747,52 @@ async def admin_update_order(order_id: str, body: AdminOrderUpdate, admin: dict 
         update_q["$push"] = push
     await db.orders.update_one({"_id": order["_id"]}, update_q)
     updated = await db.orders.find_one({"_id": order["_id"]})
+    if body.status and body.status != order.get("status") and body.status in STATUS_HEADLINES:
+        try:
+            await send_email(
+                to=updated["user_email"],
+                subject=f'{updated["order_no"]} — {STATUS_HEADLINES[body.status]}',
+                html=status_email_html(updated, body.status))
+            logger.info(f"Status email sent for {updated['order_no']} ({body.status})")
+        except Exception as e:
+            logger.error(f"Status email failed for {updated.get('order_no')}: {e}")
     return order_response(updated)
+
+
+class ProductIn(BaseModel):
+    title: str
+    game: str
+    edition: Optional[str] = None
+    blurb: Optional[str] = ""
+    image_url: Optional[str] = None
+    image_path: Optional[str] = None
+
+
+@api_router.post("/admin/products")
+async def admin_create_product(body: ProductIn, admin: dict = Depends(require_admin)):
+    edition = body.edition or f"Nº {await db.products.count_documents({'kind': 'poster'}) + 1:03d}"
+    doc = Product(kind="poster", title=body.title.strip(), game=body.game.strip(), edition=edition,
+                  blurb=body.blurb or "", image_url=body.image_url, image_path=body.image_path,
+                  prices=POSTER_PRICES)
+    result = await db.products.insert_one(doc.to_mongo())
+    return Product.from_mongo(await db.products.find_one({"_id": result.inserted_id})).model_dump()
+
+
+@api_router.put("/admin/products/{product_id}")
+async def admin_update_product(product_id: str, body: ProductIn, admin: dict = Depends(require_admin)):
+    updates = {k: v for k, v in body.model_dump().items()}
+    result = await db.products.update_one({"_id": ObjectId(product_id)}, {"$set": updates})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Edition not found")
+    return Product.from_mongo(await db.products.find_one({"_id": ObjectId(product_id)})).model_dump()
+
+
+@api_router.delete("/admin/products/{product_id}")
+async def admin_delete_product(product_id: str, admin: dict = Depends(require_admin)):
+    result = await db.products.delete_one({"_id": ObjectId(product_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Edition not found")
+    return {"ok": True}
 
 
 # ---------- Misc ----------
@@ -641,11 +828,10 @@ async def seed_admin():
 
 
 async def seed_products():
-    await db.products.delete_many({"kind": "poster"})
-    for p in POSTER_SEED:
-        doc = Product(kind="poster", prices=POSTER_PRICES, **p)
-        await db.products.insert_one(doc.to_mongo())
-    logger.info(f"Seeded {len(POSTER_SEED)} poster prints")
+    if await db.products.count_documents({"kind": "poster"}) == 0:
+        for p in POSTER_SEED:
+            await db.products.insert_one(Product(kind="poster", prices=POSTER_PRICES, **p).to_mongo())
+        logger.info(f"Seeded {len(POSTER_SEED)} poster prints")
 
 
 @app.on_event("startup")

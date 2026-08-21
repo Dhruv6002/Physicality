@@ -98,7 +98,7 @@ def get_object(path: str):
 # ---------- Transactional email (Emergent managed Resend) ----------
 EMAIL_BASE_URL = "https://integrations.emergentagent.com"
 EMAIL_KEY = os.environ.get("EMERGENT_EMAIL_KEY", "")
-EMAIL_FROM_NAME = os.environ.get("EMAIL_FROM_NAME", "Physical Editions")
+EMAIL_FROM_NAME = os.environ.get("EMAIL_FROM_NAME", "Physicality")
 APP_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 
 _SHORTENERS = ("bit.ly", "tinyurl.com", "t.co", "is.gd", "cutt.ly", "goo.gl", "rebrand.ly")
@@ -216,8 +216,8 @@ def status_email_html(order: dict, new_status: str) -> str:
         '<tr><td align="center">'
         '<table role="presentation" width="560" cellpadding="0" cellspacing="0" style="background:#F4F0EA;border:1px solid #1C1C1A;padding:40px">'
         '<tr><td>'
-        '<p style="font-family:Georgia,serif;font-size:22px;margin:0;color:#1C1C1A">Physical Editions<span style="color:#C85A43">.</span></p>'
-        '<p style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#5C5A56;margin:6px 0 28px">A physical games press</p>'
+        '<p style="font-family:Arial,sans-serif;font-size:16px;letter-spacing:6px;margin:0;color:#1C1C1A">PHYSICALITY</p>'
+        '<p style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#5C5A56;margin:6px 0 28px">Make digital tangible</p>'
         f'<p style="font-family:Georgia,serif;font-size:30px;margin:0 0 6px;color:#1C1C1A">{STATUS_HEADLINES[new_status]}</p>'
         f'<p style="font-family:Arial,sans-serif;font-size:13px;color:#5C5A56;margin:0 0 24px">Hi {name}, order <strong>{escape(order["order_no"])}</strong> just moved on the press bench.</p>'
         f'<p style="margin:0 0 24px">{progress}</p>'
@@ -798,7 +798,7 @@ async def admin_delete_product(product_id: str, admin: dict = Depends(require_ad
 # ---------- Misc ----------
 @api_router.get("/")
 async def root():
-    return {"message": "Physical Editions — press API online"}
+    return {"message": "Physicality — press API online"}
 
 
 app.include_router(api_router)

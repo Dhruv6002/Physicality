@@ -39,6 +39,9 @@ A website for a gamer's print business, minimal (not funky): customers order (1)
 - P1: Admin product management (add/edit posters, prices) in Press Office; email notifications on status change
 - P2: Discount reporting, order cancellation, address book, multiple cover-art platform templates
 
+## Branding (2026-08-21, round 3)
+- Startup renamed to **Physicality** (tagline: "Make digital tangible"); logo applied: P disc-box mark in nav + auth page, full wordmark logo in footer, favicon from the mark, Razorpay checkout name, email sender name + email header. Logo files at /app/frontend/public/brand/ (white background converted to transparency).
+
 ## Implemented (2026-08-21, round 2)
 - Order status emails via Emergent-managed Resend: admin marking an order packed/shipped/delivered auto-emails the customer (branded editorial template, progress line, tracking block only for uncoded orders). Verified sending to delivered@resend.dev (PE-1006). Note: fake test addresses like collector@test.com are blocked by the proxy as undeliverable — by design.
 - Catalog Manager in Press Office ("Editions" tab): add/edit/remove poster editions, auto edition numbers, image via URL or upload to object storage. CRUD verified via API; customers get 403.

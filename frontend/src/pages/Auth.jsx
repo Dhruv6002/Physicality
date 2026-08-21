@@ -30,6 +30,7 @@ export default function Auth() {
 
   return (
     <div className="mx-auto max-w-xl px-5 py-20 md:py-28" data-testid="auth-page">
+      <img src="/brand/logo-mark.png" alt="Physicality" className="h-16 w-auto mb-10" data-testid="auth-logo" />
       <SectionHeading index="The ledger" title={mode === "login" ? <>Sign <span className="italic">in</span></> : <>Open an <span className="italic">account</span></>} className="mb-12" />
 
       <Reveal>

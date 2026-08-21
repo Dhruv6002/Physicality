@@ -53,7 +53,7 @@ export default function Cart() {
           key: rz.key_id,
           amount: rz.amount,
           currency: rz.currency,
-          name: "Physical Editions",
+          name: "Physicality",
           description: `Order ${order.order_no}`,
           order_id: rz.razorpay_order_id,
           prefill: { name: shipping.name, email: user.email, contact: shipping.phone },

@@ -23,8 +23,9 @@ export default function Nav() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-paper border-b border-ink" data-testid="main-nav">
       <div className="mx-auto max-w-7xl px-5 md:px-8 h-16 flex items-center justify-between">
-        <Link to="/" className="flex items-baseline gap-3" data-testid="nav-brand-link">
-          <span className="font-display-press text-xl tracking-tight text-ink">Physical&nbsp;Editions</span>
+        <Link to="/" className="flex items-center gap-3" data-testid="nav-brand-link">
+          <img src="/brand/logo-mark.png" alt="Physicality" className="h-9 w-auto" />
+          <span className="font-mono-press text-sm tracking-[0.35em] text-ink">PHYSICALITY</span>
           <span className="hidden lg:inline font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke">Press Nº 01</span>
         </Link>
 

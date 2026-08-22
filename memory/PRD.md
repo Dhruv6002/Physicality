@@ -39,6 +39,9 @@ A website for a gamer's print business, minimal (not funky): customers order (1)
 - P1: Admin product management (add/edit posters, prices) in Press Office; email notifications on status change
 - P2: Discount reporting, order cancellation, address book, multiple cover-art platform templates
 
+## Google sign-in (2026-08-21, round 4)
+- Emergent-managed Google OAuth added: "Continue with Google" on /auth; redirect derived from window.location.origin (never hardcoded); AuthCallback exchanges session_id via POST /api/auth/google/session; Google sessions stored in db.user_sessions (7-day expiry) and also issue the app's JWT; accounts linked by email (Google sign-in with the admin email keeps admin role); Google-only users have no password and cannot use password login; logout clears both JWT and Google session. Verified via injected session (cookie + bearer) and browser flow.
+
 ## Branding (2026-08-21, round 3)
 - Startup renamed to **Physicality** (tagline: "Make digital tangible"); logo applied: P disc-box mark in nav + auth page, full wordmark logo in footer, favicon from the mark, Razorpay checkout name, email sender name + email header. Logo files at /app/frontend/public/brand/ (white background converted to transparency).
 

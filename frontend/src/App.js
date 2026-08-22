@@ -7,6 +7,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import AuthCallback from "@/components/AuthCallback";
 import Home from "@/pages/Home";
 import Shop from "@/pages/Shop";
 import CustomPoster from "@/pages/CustomPoster";
@@ -22,6 +23,37 @@ function ScrollToTop() {
     window.scrollTo(0, 0);
   }, [pathname]);
   return null;
+}
+
+function AppShell() {
+  return (
+    <>
+      <ScrollToTop />
+      <Nav />
+      <main className="pt-16 min-h-screen">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/shop" element={<Shop />} />
+          <Route path="/custom" element={<CustomPoster />} />
+          <Route path="/cover-art" element={<CoverArt />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/account" element={<Account />} />
+          <Route path="/admin" element={<Admin />} />
+        </Routes>
+      </main>
+      <Footer />
+    </>
+  );
+}
+
+function AppRouter() {
+  const location = useLocation();
+  // OAuth callback: detect session_id synchronously during render (not in useEffect)
+  if (location.hash?.includes("session_id=")) {
+    return <AuthCallback />;
+  }
+  return <AppShell />;
 }
 
 function App() {
@@ -44,21 +76,7 @@ function App() {
       <AuthProvider>
         <CartProvider>
           <BrowserRouter>
-            <ScrollToTop />
-            <Nav />
-            <main className="pt-16 min-h-screen">
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/shop" element={<Shop />} />
-                <Route path="/custom" element={<CustomPoster />} />
-                <Route path="/cover-art" element={<CoverArt />} />
-                <Route path="/cart" element={<Cart />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/account" element={<Account />} />
-                <Route path="/admin" element={<Admin />} />
-              </Routes>
-            </main>
-            <Footer />
+            <AppRouter />
           </BrowserRouter>
           <Toaster
             position="bottom-right"

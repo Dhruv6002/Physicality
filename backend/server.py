@@ -296,7 +296,7 @@ def set_auth_cookies(response: Response, access: str, refresh: str):
 
 def public_user(doc: dict) -> dict:
     return {"id": str(doc["_id"]), "email": doc["email"], "name": doc["name"],
-            "role": doc.get("role", "customer")}
+            "role": doc.get("role", "customer"), "picture": doc.get("picture")}
 
 
 def decode_token(token: str) -> dict:
@@ -309,20 +309,32 @@ def decode_token(token: str) -> dict:
 
 
 async def get_current_user(request: Request) -> dict:
-    token = request.cookies.get("access_token")
-    if not token:
-        auth_header = request.headers.get("Authorization", "")
-        if auth_header.startswith("Bearer "):
-            token = auth_header[7:]
-    if not token:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    payload = decode_token(token)
-    if payload.get("type") != "access":
-        raise HTTPException(status_code=401, detail="Invalid token type")
-    user = await db.users.find_one({"_id": ObjectId(payload["sub"])})
-    if not user:
-        raise HTTPException(status_code=401, detail="User not found")
-    return user
+    auth_header = request.headers.get("Authorization", "")
+    bearer = auth_header[7:] if auth_header.startswith("Bearer ") else None
+    token = request.cookies.get("access_token") or bearer
+    if token:
+        try:
+            payload = jwt.decode(token, get_jwt_secret(), algorithms=[JWT_ALGORITHM])
+            if payload.get("type") == "access":
+                user = await db.users.find_one({"_id": ObjectId(payload["sub"])})
+                if user:
+                    return user
+        except Exception:
+            pass
+    session_token = request.cookies.get("session_token") or bearer
+    if session_token:
+        sess = await db.user_sessions.find_one({"session_token": session_token})
+        if sess:
+            expires_at = sess["expires_at"]
+            if isinstance(expires_at, str):
+                expires_at = datetime.fromisoformat(expires_at)
+            if expires_at.tzinfo is None:
+                expires_at = expires_at.replace(tzinfo=timezone.utc)
+            if expires_at >= datetime.now(timezone.utc):
+                user = await db.users.find_one({"_id": ObjectId(sess["user_id"])})
+                if user:
+                    return user
+    raise HTTPException(status_code=401, detail="Not authenticated")
 
 
 async def require_admin(user: dict = Depends(get_current_user)) -> dict:
@@ -369,7 +381,7 @@ async def login(body: LoginIn, request: Request, response: Response):
         if locked_until and locked_until > datetime.now(timezone.utc):
             raise HTTPException(status_code=429, detail="Too many failed attempts. Try again in 15 minutes.")
     user = await db.users.find_one({"email": email})
-    if not user or not verify_password(body.password, user["password_hash"]):
+    if not user or not user.get("password_hash") or not verify_password(body.password, user["password_hash"]):
         await db.login_attempts.update_one(
             {"identifier": identifier},
             {"$inc": {"count": 1},
@@ -384,9 +396,13 @@ async def login(body: LoginIn, request: Request, response: Response):
 
 
 @api_router.post("/auth/logout")
-async def logout(response: Response):
+async def logout(request: Request, response: Response):
+    session_token = request.cookies.get("session_token")
+    if session_token:
+        await db.user_sessions.delete_many({"session_token": session_token})
     response.delete_cookie("access_token", path="/")
     response.delete_cookie("refresh_token", path="/")
+    response.delete_cookie("session_token", path="/")
     return {"ok": True}
 
 
@@ -409,6 +425,45 @@ async def refresh_token(request: Request, response: Response):
     access = create_access_token(str(user["_id"]), user["email"])
     response.set_cookie("access_token", access, httponly=True, secure=True, samesite="none", max_age=43200, path="/")
     return {"token": access}
+
+
+@api_router.post("/auth/google/session")
+async def google_session(body: dict, response: Response):
+    session_id = body.get("session_id")
+    if not session_id:
+        raise HTTPException(status_code=400, detail="Missing session_id")
+    try:
+        async with httpx.AsyncClient(timeout=30) as http_client:
+            resp = await http_client.get(
+                "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
+                headers={"X-Session-ID": session_id})
+    except Exception:
+        raise HTTPException(status_code=502, detail="Could not reach the sign-in service")
+    if resp.status_code != 200:
+        raise HTTPException(status_code=401, detail="Google sign-in could not be verified")
+    data = resp.json()
+    email = data["email"].strip().lower()
+    user = await db.users.find_one({"email": email})
+    if user:
+        await db.users.update_one({"_id": user["_id"]},
+                                  {"$set": {"google_id": data.get("id"), "picture": data.get("picture")}})
+        user = await db.users.find_one({"_id": user["_id"]})
+    else:
+        result = await db.users.insert_one({
+            "email": email, "name": data.get("name") or email.split("@")[0], "role": "customer",
+            "password_hash": None, "google_id": data.get("id"), "picture": data.get("picture"),
+            "created_at": datetime.now(timezone.utc)})
+        user = await db.users.find_one({"_id": result.inserted_id})
+    await db.user_sessions.insert_one({
+        "user_id": str(user["_id"]), "session_token": data["session_token"],
+        "expires_at": datetime.now(timezone.utc) + timedelta(days=7),
+        "created_at": datetime.now(timezone.utc)})
+    access = create_access_token(str(user["_id"]), email)
+    refresh = create_refresh_token(str(user["_id"]))
+    set_auth_cookies(response, access, refresh)
+    response.set_cookie("session_token", data["session_token"], httponly=True, secure=True,
+                        samesite="none", max_age=604800, path="/")
+    return {"user": public_user(user), "token": access}
 
 
 @api_router.post("/auth/forgot-password")
@@ -840,6 +895,7 @@ async def startup():
     await db.password_reset_tokens.create_index("expires_at", expireAfterSeconds=0)
     await db.login_attempts.create_index("identifier")
     await db.orders.create_index("user_id")
+    await db.user_sessions.create_index("session_token")
     await seed_admin()
     await seed_products()
     try:

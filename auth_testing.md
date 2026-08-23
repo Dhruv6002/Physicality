@@ -36,7 +36,7 @@ print('Session token: ' + sessionToken);
 
 ## Step 2: Test Backend API
 ```bash
-curl -X GET "http://localhost:8001/api/auth/me" -H "Authorization: Bearer YOUR_SESSION_TOKEN"
+curl -X GET "http://localhost:8000/api/auth/me" -H "Authorization: Bearer YOUR_SESSION_TOKEN"
 ```
 
 ## Step 3: Browser Testing
@@ -87,6 +87,6 @@ db.user_sessions.deleteMany({session_token: /test_session/});
 
 # Legacy JWT auth checks (email/password)
 ```
-curl -c cookies.txt -X POST http://localhost:8001/api/auth/login -H "Content-Type: application/json" -d '{"email":"admin@physicaleditions.in","password":"PressAdmin@5050"}'
-curl -b cookies.txt http://localhost:8001/api/auth/me
+curl -c cookies.txt -X POST http://localhost:8000/api/auth/login -H "Content-Type: application/json" -d '{"email":"dhruvambardar@gmail.com","password":"Physicality@2006!"}'
+curl -b cookies.txt http://localhost:8000/api/auth/me
 ```

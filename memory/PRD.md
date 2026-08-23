@@ -38,7 +38,9 @@ A website for a gamer's print business, minimal (not funky): customers order (1)
 - P0: Live Razorpay keys; ~~final pricing~~ pricing set from menu (2026-08-21): A4 framed ₹259/unframed ₹149, A3 framed ₹399/unframed ₹179, A5 unframed ₹89, DVD cover boxes ₹199 (PlayStation/Xbox/PC, includes free A5 poster)
 - P1: Admin product management (add/edit posters, prices) in Press Office; email notifications on status change
 - P2: Discount reporting, order cancellation, address book, multiple cover-art platform templates
-
+## Bugfix (2026-08-23): Google sign-in 404
+- Root cause: Emergent's session-data endpoint returns 404 `user_data_not_found` when the one-time session_id was already consumed or expired (double exchange under StrictMode / page refresh re-firing the callback).
+- Fix: backend retries the exchange once after 1.5s on 404; AuthCallback guards each session_id in sessionStorage so it can only be exchanged once per tab; clearer user-facing error ("sign-in link expired or was already used — press the button once more"). Verified in browser: single exchange call, clean error banner, valid sessions still sign in.
 ## Google sign-in (2026-08-21, round 4)
 - Emergent-managed Google OAuth added: "Continue with Google" on /auth; redirect derived from window.location.origin (never hardcoded); AuthCallback exchanges session_id via POST /api/auth/google/session; Google sessions stored in db.user_sessions (7-day expiry) and also issue the app's JWT; accounts linked by email (Google sign-in with the admin email keeps admin role); Google-only users have no password and cannot use password login; logout clears both JWT and Google session. Verified via injected session (cookie + bearer) and browser flow.
 

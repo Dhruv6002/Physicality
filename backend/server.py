@@ -8,7 +8,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Annotated, List, Optional
-
+import asyncio
 import ipaddress
 import re
 from html import escape
@@ -432,6 +432,8 @@ async def google_session(body: dict, response: Response):
     session_id = body.get("session_id")
     if not session_id:
         raise HTTPException(status_code=400, detail="Missing session_id")
+        resp = None
+    for attempt in (1, 2):
     try:
         async with httpx.AsyncClient(timeout=30) as http_client:
             resp = await http_client.get(
@@ -439,6 +441,13 @@ async def google_session(body: dict, response: Response):
                 headers={"X-Session-ID": session_id})
     except Exception:
         raise HTTPException(status_code=502, detail="Could not reach the sign-in service")
+        # 404 here means "user_data_not_found or expired"; retry once for propagation lag
+        if resp.status_code == 404 and attempt == 1:
+            await asyncio.sleep(1.5)
+            continue
+        break
+    if resp.status_code == 404:
+        raise HTTPException(status_code=401, detail="That sign-in link expired or was already used. Try again.")
     if resp.status_code != 200:
         raise HTTPException(status_code=401, detail="Google sign-in could not be verified")
     data = resp.json()

@@ -13,6 +13,13 @@ export default function AuthCallback() {
     if (processed.current) return;
     processed.current = true;
     const sessionId = new URLSearchParams(location.hash.replace(/^#/, "")).get("session_id");
+    // session_id is single-use: guard against double-fire (StrictMode remount / quick refresh)
+    const guardKey = `pe_gi_${sessionId}`;
+    if (!sessionId || sessionStorage.getItem(guardKey)) {
+      navigate("/auth?error=google", { replace: true });
+      return;
+    }
+    sessionStorage.setItem(guardKey, "1");
     (async () => {
       try {
         const { data } = await api.post("/auth/google/session", { session_id: sessionId });

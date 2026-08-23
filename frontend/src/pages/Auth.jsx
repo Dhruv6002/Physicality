@@ -16,7 +16,7 @@ export default function Auth() {
   const [params] = useSearchParams();
 
   useEffect(() => {
-    if (params.get("error") === "google") setError("Google sign-in could not be completed. Try again.");
+    if (params.get("error") === "google") setError("That google sign-in link expired or was already used - press the button once more.");
   }, [params]);
 
   useEffect(() => {

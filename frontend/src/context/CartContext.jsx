@@ -28,7 +28,13 @@ export function CartProvider({ children }) {
     const subtotal = items.reduce((s, i) => s + i.unit_price * i.qty, 0);
     const promoOk = promo.trim().toUpperCase() === PROMO_CODE;
     const discount = promoOk
-      ? items.reduce((s, i) => s + (i.kind === "poster" || i.kind === "custom" ? Math.floor((i.unit_price * i.qty) / 2) : 0), 0)
+      ? items.reduce((s, i) => {
+          const isEligiblePromoItem =
+            (i.kind === "poster" || i.kind === "custom") &&
+            (i.size === "A4" || i.size === "A3") &&
+            (i.framing === "unframed" || (i.framing == null && i.size === "A4" || i.size === "A3"));
+          return s + (isEligiblePromoItem ? Math.floor((i.unit_price * i.qty) / 2) : 0);
+        }, 0)
       : 0;
     return { subtotal, discount, total: subtotal - discount, promoOk };
   }, [items, promo]);

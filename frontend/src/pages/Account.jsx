@@ -99,7 +99,7 @@ export default function Account() {
                         <span className="font-serif-press italic text-base">{i.title}</span>
                         <span className="font-mono-press text-[10px] uppercase tracking-[0.15em] text-smoke ml-3">
                           {i.kind === "cover"
-                            ? `Cover box · ${i.platform} · + free A5 poster`
+                            ? `DVD cover box · ${i.platform} · + free A5 poster`
                             : `${i.size}${i.framing ? ` · ${i.framing === "framed" ? "Framed" : "Unframed"}` : ""} · ${i.game || "print"}`} × {i.qty}
                         </span>
                       </span>

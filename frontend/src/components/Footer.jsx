@@ -17,7 +17,7 @@ export default function Footer() {
           <div className="flex flex-col gap-3 font-mono-press text-xs uppercase tracking-[0.15em]">
             <Link to="/shop" className="text-ink link-underline w-fit">Poster catalog</Link>
             <Link to="/custom" className="text-ink link-underline w-fit">Custom poster</Link>
-            <Link to="/cover-art" className="text-ink link-underline w-fit">CD cover boxes</Link>
+            <Link to="/cover-art" className="text-ink link-underline w-fit">DVD cover boxes</Link>
           </div>
         </div>
         <div className="md:col-span-3">

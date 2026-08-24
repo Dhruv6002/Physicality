@@ -8,7 +8,7 @@ import { useCart } from "../context/CartContext";
 const LINKS = [
   { to: "/shop", label: "Posters" },
   { to: "/custom", label: "Custom Poster" },
-  { to: "/cover-art", label: "CD Cover" },
+  { to: "/cover-art", label: "DVD Cover" },
   { to: "/account", label: "Track Order" },
 ];
 

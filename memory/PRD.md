@@ -1,7 +1,7 @@
 # PRD — Physical Editions
 
 ## Original problem statement
-A website for a gamer's print business, minimal (not funky): customers order (1) posters of favorite games in A4/A5, (2) custom posters via image upload, (3) "physical edition" cover art — customer names game + platform (PS5/PS4/Xbox) and receives a CD jewel case with printed cover art only (no game disc). Aesthetic: collector's press / vinyl reissue label — warm cream paper, terracotta accent, distinctive serif display, editorial, non-tech. Secret promocode FREEHOSTEL5050 = 50% off posters only; coded orders show progress (packed/shipped/delivered) but NO tracking number; uncoded orders get progress + tracking ID with courier brand.
+A website for a gamer's print business, minimal (not funky): customers order (1) posters of favorite games in A4/A5, (2) custom posters via image upload, (3) "physical edition" cover art — customer names game + platform (PlayStation 5/PlayStation 4/Xbox/PC) and receives a DVD case with printed cover art only (no game disc). Aesthetic: collector's press / vinyl reissue label — warm cream paper, terracotta accent, distinctive serif display, editorial, non-tech. Secret promocode FREEHOSTEL5050 = 50% off posters only; coded orders show progress (packed/shipped/delivered) but NO tracking number; uncoded orders get progress + tracking ID with courier brand.
 
 ## User choices (gathered)
 - Payment: Razorpay (keys pending from user — currently MOCKED mock-pay while keys are empty)
@@ -17,7 +17,7 @@ A website for a gamer's print business, minimal (not funky): customers order (1)
 ## Implemented (2026-08-21)
 - Full auth: register/login/logout/me/refresh/forgot/reset, brute-force lockout, admin role
 - Catalog: 8 seeded poster editions with edition numbers
-- Order flows: poster (A4/A5), custom poster (image upload to object storage), cover art (game + PS5/PS4/Xbox)
+- Order flows: poster (A4/A5), custom poster (image upload to object storage), cover art (game + PlayStation 5/PlayStation 4/Xbox/PC)
 - Promo logic: FREEHOSTEL5050 → 50% off poster/custom items only (server-computed); coded orders strip tracking fields from customer API responses
 - Payments: Razorpay create-order + signature verify endpoints; MOCKED mock-pay path while keys are absent
 - Customer account: order history with Placed→Packed→Shipped→Delivered timeline; tracking ID + courier for uncoded orders
@@ -35,7 +35,7 @@ A website for a gamer's print business, minimal (not funky): customers order (1)
 - Real cover-art/game imagery for catalog (currently curated stock art)
 
 ## Backlog
-- P0: Live Razorpay keys; ~~final pricing~~ pricing set from menu (2026-08-21): A4 framed ₹259/unframed ₹149, A3 framed ₹399/unframed ₹179, A5 unframed ₹89, DVD cover boxes ₹199 (PlayStation/Xbox/PC, includes free A5 poster)
+- P0: Live Razorpay keys; ~~final pricing~~ pricing set from menu (2026-08-21): A4 framed ₹259/unframed ₹149, A3 framed ₹399/unframed ₹179, A5 unframed ₹89, DVD cover boxes ₹199 (PlayStation 5/PlayStation 4/Xbox/PC, includes free A5 poster)
 - P1: Admin product management (add/edit posters, prices) in Press Office; email notifications on status change
 - P2: Discount reporting, order cancellation, address book, multiple cover-art platform templates
 ## Bugfix (2026-08-23): Google sign-in 404
@@ -53,5 +53,5 @@ A website for a gamer's print business, minimal (not funky): customers order (1)
 
 ## Redesign (2026-08-21)
 - Restyled home to match the "Physicality." reference: masthead rule bar, giant masked serif headline ("The archive for players who still collect."), black game-name marquee, split N°01/N°02 type panels, process steps, dark colophon CTA
-- Nav: Posters / Custom Poster / CD Cover / Track Order; footer: Shop + Support columns
-- New product model: posters take any game name (or catalog pick) + A4/A3/A5 + framed/unframed; custom uploads share the poster price table; DVD covers are PlayStation/Xbox/PC at ₹199 with free A5 poster flagged on the order item
+- Nav: Posters / Custom Poster / DVD Cover / Track Order; footer: Shop + Support columns
+- New product model: posters take any game name (or catalog pick) + A4/A3/A5 + framed/unframed; custom uploads share the poster price table; DVD covers are PlayStation 5/PlayStation 4/Xbox/PC at ₹199 with free A5 poster flagged on the order item

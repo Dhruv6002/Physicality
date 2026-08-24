@@ -46,36 +46,43 @@ export default function Cart() {
       const { data: order } = await api.post("/orders", payload);
       const { data: cfg } = await api.get("/payments/config");
       if (cfg.configured) {
-        const { data: rz } = await api.post("/payments/razorpay-order", { order_id: order.id });
-        const ok = await loadRazorpay();
-        if (!ok) throw new Error("Could not load the payment gateway — check your connection");
-        const rzp = new window.Razorpay({
-          key: rz.key_id,
-          amount: rz.amount,
-          currency: rz.currency,
-          name: "Physicality",
-          description: `Order ${order.order_no}`,
-          order_id: rz.razorpay_order_id,
-          prefill: { name: shipping.name, email: user.email, contact: shipping.phone },
-          theme: { color: "#C85A43" },
-          modal: { ondismiss: () => setBusy(false) },
-          handler: async (resp) => {
-            try {
-              await api.post("/payments/verify", { order_id: order.id, ...resp });
-              clear();
-              navigate(`/account?placed=${order.order_no}`);
-            } catch (e) {
-              toast.error(formatApiError(e));
-              setBusy(false);
-            }
-          },
-        });
-        rzp.open();
-      } else {
-        await api.post("/payments/mock-pay", { order_id: order.id });
-        clear();
-        navigate(`/account?placed=${order.order_no}`);
+        try {
+          const { data: rz } = await api.post("/payments/razorpay-order", { order_id: order.id });
+          const ok = await loadRazorpay();
+          if (!ok) {
+            throw new Error("Could not load the payment gateway — falling back to local mock checkout");
+          }
+          const rzp = new window.Razorpay({
+            key: rz.key_id,
+            amount: rz.amount,
+            currency: rz.currency,
+            name: "Physicality",
+            description: `Order ${order.order_no}`,
+            order_id: rz.razorpay_order_id,
+            prefill: { name: shipping.name, email: user.email, contact: shipping.phone },
+            theme: { color: "#C85A43" },
+            modal: { ondismiss: () => setBusy(false) },
+            handler: async (resp) => {
+              try {
+                await api.post("/payments/verify", { order_id: order.id, ...resp });
+                clear();
+                navigate(`/account?placed=${order.order_no}`);
+              } catch (e) {
+                toast.error(formatApiError(e));
+                setBusy(false);
+              }
+            },
+          });
+          rzp.open();
+          return;
+        } catch (rzErr) {
+          throw rzErr;
+        }
       }
+
+      await api.post("/payments/mock-pay", { order_id: order.id });
+      clear();
+      navigate(`/account?placed=${order.order_no}`);
     } catch (e) {
       toast.error(formatApiError(e));
       setBusy(false);
@@ -176,7 +183,7 @@ export default function Cart() {
                 />
                 {promo && (
                   <p className={`mt-2 font-mono-press text-[10px] uppercase tracking-[0.2em] ${totals.promoOk ? "text-terra" : "text-smoke"}`} data-testid="promo-status">
-                    {totals.promoOk ? "Code accepted — 50% off prints. No tracking number is issued for coded orders." : "Code not recognised"}
+                    {totals.promoOk ? "Code accepted — 50% off unframed A4/A3 posters. No tracking number is issued for coded orders." : "Code not recognised"}
                   </p>
                 )}
               </div>

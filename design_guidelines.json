@@ -83,7 +83,7 @@
     "marquee": "Use react-fast-marquee. Very slow speed (e.g., speed={20}). Text should be large, italicized serif, or uppercase mono separated by '✦'."
   },
   "media": {
-    "3d_libraries": "Not strictly required unless adding a simple Framer Motion 3D card tilt for the CD cover, but stick to 2D parallax for elegance."
+    "3d_libraries": "Not strictly required unless adding a simple Framer Motion 3D card tilt for the DVD cover, but stick to 2D parallax for elegance."
   },
   "image_urls": {
     "hero_or_catalog_placeholder_1": {
@@ -94,9 +94,9 @@
       "url": "https://images.unsplash.com/photo-1695634184046-93d24e779ea7?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2MzR8MHwxfHNlYXJjaHwzfHxtaW5pbWFsaXN0JTIwcG9zdGVyJTIwZnJhbWV8ZW58MHx8fHwxNzg3MzExMjMwfDA&ixlib=rb-4.1.0&q=85",
       "description": "Minimalist poster frame on floor. Good for A4/A5 poster catalog."
     },
-    "cd_physical_cover_1": {
+    "dvd_physical_cover_1": {
       "url": "https://images.pexels.com/photos/93388/pexels-photo-93388.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
-      "description": "Unused CD jewel case. Use for the 'Physical edition cover art' product."
+      "description": "Unused DVD case. Use for the 'Physical edition cover art' product."
     },
     "game_art_example_1": {
       "url": "https://images.pexels.com/photos/26594027/pexels-photo-26594027.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
@@ -133,8 +133,8 @@
       },
       {
         "type": "Physical Cover Art",
-        "options": ["Game Name (Text Input)", "Platform (PS5, PS4, Xbox)"],
-        "note": "CD Box with printed cover only. No game disc."
+        "options": ["Game Name (Text Input)", "Platform (PlayStation 5, PlayStation 4, Xbox, PC)"],
+        "note": "DVD Box with printed cover only. No game disc."
       }
     ]
   },

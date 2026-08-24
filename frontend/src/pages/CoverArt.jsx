@@ -5,14 +5,14 @@ import api from "../lib/api";
 import { useCart } from "../context/CartContext";
 import { Reveal, SectionHeading, RegistrationMarks } from "../components/Motion";
 
-const CD_CASE = "https://images.pexels.com/photos/93388/pexels-photo-93388.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940";
+const DVD_CASE = "https://images.pexels.com/photos/93388/pexels-photo-93388.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940";
 
 export default function CoverArt() {
   const { addItem } = useCart();
   const [game, setGame] = useState("");
-  const [platform, setPlatform] = useState("PlayStation");
+  const [platform, setPlatform] = useState("PlayStation 5");
   const [price, setPrice] = useState(199);
-  const [platforms, setPlatforms] = useState(["PlayStation", "Xbox", "PC"]);
+  const [platforms, setPlatforms] = useState(["PlayStation 5", "PlayStation 4", "Xbox", "PC"]);
 
   useEffect(() => {
     api.get("/pricing").then(({ data }) => {
@@ -34,7 +34,7 @@ export default function CoverArt() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
         <Reveal className="relative">
           <div className="relative border border-ink">
-            <img src={CD_CASE} alt="A disc box awaiting its cover art" className="w-full aspect-square object-cover" />
+            <img src={DVD_CASE} alt="A DVD box awaiting its cover art" className="w-full aspect-square object-cover" />
             <RegistrationMarks />
           </div>
           <div className="mt-4 border border-terra bg-paper2 p-5 flex items-start gap-4">
@@ -83,7 +83,7 @@ export default function CoverArt() {
           <div className="mt-12 flex items-start gap-3 text-smoke">
             <Disc3 size={18} className="text-terra shrink-0 mt-0.5" />
             <p className="text-sm leading-relaxed">
-              Cover art is sourced and pressed per platform — PlayStation, Xbox and PC boxes differ in size
+              Cover art is sourced and pressed per platform — PlayStation 5, PlayStation 4, Xbox and PC boxes differ in size
               and spine, and we match the one your shelf already holds.
             </p>
           </div>

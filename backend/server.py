@@ -37,7 +37,13 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 logger = logging.getLogger("physical-editions")
 
 mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
+client = AsyncIOMotorClient(
+    mongo_url,
+    tls=True,
+    tlsAllowInvalidCertificates=True,
+    serverSelectionTimeoutMS=30000,
+    connectTimeoutMS=30000,
+)
 db = client[os.environ['DB_NAME']]
 
 app = FastAPI()
@@ -51,7 +57,7 @@ POSTER_PRICES = {
     "A5": {"unframed": 89},
 }
 COVER_PRICE = 199
-PLATFORMS = ["PlayStation", "Xbox", "PC"]
+PLATFORMS = ["PlayStation 5", "PlayStation 4", "Xbox", "PC"]
 ORDER_STATUSES = ["placed", "packed", "shipped", "delivered"]
 
 UPLOAD_DIR = Path(__file__).parent / "uploads"
@@ -432,46 +438,83 @@ async def google_session(body: dict, response: Response):
     session_id = body.get("session_id")
     if not session_id:
         raise HTTPException(status_code=400, detail="Missing session_id")
-        resp = None
+
+    resp = None
     for attempt in (1, 2):
-    try:
-        async with httpx.AsyncClient(timeout=30) as http_client:
-            resp = await http_client.get(
-                "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
-                headers={"X-Session-ID": session_id})
-    except Exception:
-        raise HTTPException(status_code=502, detail="Could not reach the sign-in service")
-        # 404 here means "user_data_not_found or expired"; retry once for propagation lag
+        try:
+            async with httpx.AsyncClient(timeout=30) as http_client:
+                resp = await http_client.get(
+                    "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
+                    headers={"X-Session-ID": session_id},
+                )
+        except Exception:
+            raise HTTPException(
+                status_code=502,
+                detail="Could not reach the sign-in service",
+            )
+
+        # 404 here means "user_data_not_found or expired"; retry once
+        # for propagation lag.
         if resp.status_code == 404 and attempt == 1:
             await asyncio.sleep(1.5)
             continue
         break
+
+    if resp is None:
+        raise HTTPException(
+            status_code=502,
+            detail="Could not reach the sign-in service",
+        )
     if resp.status_code == 404:
-        raise HTTPException(status_code=401, detail="That sign-in link expired or was already used. Try again.")
+        raise HTTPException(
+            status_code=401,
+            detail="That sign-in link expired or was already used. Try again.",
+        )
     if resp.status_code != 200:
-        raise HTTPException(status_code=401, detail="Google sign-in could not be verified")
+        raise HTTPException(
+            status_code=401,
+            detail="Google sign-in could not be verified",
+        )
+
     data = resp.json()
     email = data["email"].strip().lower()
     user = await db.users.find_one({"email": email})
     if user:
-        await db.users.update_one({"_id": user["_id"]},
-                                  {"$set": {"google_id": data.get("id"), "picture": data.get("picture")}})
+        await db.users.update_one(
+            {"_id": user["_id"]},
+            {"$set": {"google_id": data.get("id"), "picture": data.get("picture")}},
+        )
         user = await db.users.find_one({"_id": user["_id"]})
     else:
         result = await db.users.insert_one({
-            "email": email, "name": data.get("name") or email.split("@")[0], "role": "customer",
-            "password_hash": None, "google_id": data.get("id"), "picture": data.get("picture"),
-            "created_at": datetime.now(timezone.utc)})
+            "email": email,
+            "name": data.get("name") or email.split("@")[0],
+            "role": "customer",
+            "password_hash": None,
+            "google_id": data.get("id"),
+            "picture": data.get("picture"),
+            "created_at": datetime.now(timezone.utc),
+        })
         user = await db.users.find_one({"_id": result.inserted_id})
+
     await db.user_sessions.insert_one({
-        "user_id": str(user["_id"]), "session_token": data["session_token"],
+        "user_id": str(user["_id"]),
+        "session_token": data["session_token"],
         "expires_at": datetime.now(timezone.utc) + timedelta(days=7),
-        "created_at": datetime.now(timezone.utc)})
+        "created_at": datetime.now(timezone.utc),
+    })
     access = create_access_token(str(user["_id"]), email)
     refresh = create_refresh_token(str(user["_id"]))
     set_auth_cookies(response, access, refresh)
-    response.set_cookie("session_token", data["session_token"], httponly=True, secure=True,
-                        samesite="none", max_age=604800, path="/")
+    response.set_cookie(
+        "session_token",
+        data["session_token"],
+        httponly=True,
+        secure=True,
+        samesite="none",
+        max_age=604800,
+        path="/",
+    )
     return {"user": public_user(user), "token": access}
 
 
@@ -679,7 +722,13 @@ async def create_order(body: OrderCreate, user: dict = Depends(get_current_user)
             raise HTTPException(status_code=400, detail="Unknown item type")
         line_total = unit * qty
         subtotal += line_total
-        if promo_applied and item.kind in ("poster", "custom"):
+        is_eligible_promo_item = (
+            promo_applied and
+            item.kind in ("poster", "custom") and
+            item.size in ("A4", "A3") and
+            framing == "unframed"
+        )
+        if is_eligible_promo_item:
             discount += line_total // 2
 
     total = subtotal - discount
@@ -736,8 +785,12 @@ async def create_razorpay_order(body: dict, user: dict = Depends(get_current_use
     if not rz:
         raise HTTPException(status_code=503, detail="Payment gateway is not configured yet")
     order = await get_payable_order(body.get("order_id", ""), user)
-    rz_order = rz.order.create({"amount": order["total"] * 100, "currency": "INR",
-                                "payment_capture": 1, "receipt": order["order_no"][:40]})
+    try:
+        rz_order = rz.order.create({"amount": order["total"] * 100, "currency": "INR",
+                                    "payment_capture": 1, "receipt": order["order_no"][:40]})
+    except Exception as exc:
+        logger.error("Razorpay order creation failed: %s", exc)
+        raise HTTPException(status_code=502, detail="Razorpay rejected the payment gateway credentials or request")
     await db.orders.update_one({"_id": order["_id"]}, {"$set": {"razorpay_order_id": rz_order["id"]}})
     return {"razorpay_order_id": rz_order["id"], "amount": rz_order["amount"], "currency": "INR",
             "key_id": os.environ.get("RAZORPAY_KEY_ID")}
@@ -868,9 +921,18 @@ async def root():
 app.include_router(api_router)
 
 frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+allowed_origins = {
+    frontend_url,
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+    "https://localhost:3000",
+    "https://127.0.0.1:3000",
+}
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[frontend_url, "http://localhost:3000"],
+    allow_origins=list(allowed_origins),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

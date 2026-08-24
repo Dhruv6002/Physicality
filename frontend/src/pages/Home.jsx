@@ -8,7 +8,7 @@ const GAMES = ["GTA VI", "Elden Ring", "Cyberpunk 2077", "The Last of Us", "God 
 
 const STEPS = [
   { num: "I.", title: "Pick a title", body: "Name any game, browse the menu, or bring your own artwork." },
-  { num: "II.", title: "Set the format", body: "A4, A3 or A5 for posters — framed or unframed. PlayStation, Xbox or PC for cover boxes." },
+  { num: "II.", title: "Set the format", body: "A4, A3 or A5 for posters — framed or unframed. PlayStation 5, PlayStation 4, Xbox or PC for cover boxes." },
   { num: "III.", title: "Pay & track", body: "Razorpay checkout. Follow your order from press bench to your doorstep." },
 ];
 
@@ -56,7 +56,7 @@ export default function Home() {
             >
               <p className="text-base text-smoke leading-relaxed max-w-sm">
                 Publishers went digital. Shelves went empty. We print the missing pieces —
-                curator-grade game posters and boxed cover-art for PlayStation, Xbox and PC.
+                curator-grade game posters and boxed cover-art for PlayStation 5, PlayStation 4, Xbox and PC.
               </p>
               <div className="mt-8 flex flex-col gap-3 max-w-sm">
                 <Link
@@ -72,7 +72,7 @@ export default function Home() {
                   data-testid="hero-cover-box-button"
                   className="group flex items-center justify-between border border-ink text-ink px-6 py-4 font-mono-press text-xs uppercase tracking-[0.2em] hover:bg-ink hover:text-paper transition-colors"
                 >
-                  CD cover box
+                  DVD cover box
                   <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
                 </Link>
               </div>
@@ -114,7 +114,7 @@ export default function Home() {
               A box for<br /><span className="italic">your digital.</span>
             </h2>
             <p className="mt-6 text-sm text-smoke leading-relaxed max-w-xs">
-              PlayStation, Xbox or PC. Custom cover art in a real disc box — ₹199, with a free A5 poster inside.
+              PlayStation 5, PlayStation 4, Xbox or PC. Custom cover art in a real disc box — ₹199, with a free A5 poster inside.
               Disc not included; the shelf presence is.
             </p>
             <Link to="/cover-art" data-testid="panel-cover-link" className="group/l mt-10 inline-flex items-center gap-2 font-mono-press text-xs uppercase tracking-[0.2em] text-ink link-underline">

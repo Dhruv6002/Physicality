@@ -151,7 +151,7 @@ export default function CustomPoster() {
               data-testid="custom-add-to-cart-button"
               className="bg-terra text-paper px-6 py-3 font-mono-press text-xs uppercase tracking-widest hover:bg-terra-dark transition-colors disabled:opacity-50"
             >
-              Press into cart
+              Add to cart
             </button>
           </div>
         </Reveal>

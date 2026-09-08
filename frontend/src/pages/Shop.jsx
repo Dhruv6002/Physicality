@@ -118,7 +118,7 @@ export default function Shop() {
                 data-testid="any-game-add-button"
                 className="bg-terra text-paper px-6 py-3 font-mono-press text-xs uppercase tracking-widest hover:bg-terra-dark transition-colors"
               >
-                Press into cart
+                Add to cart
               </button>
             </div>
           </div>

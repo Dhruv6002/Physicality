@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import api, { productImage } from "../lib/api";
 import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext";
 import { Reveal, SectionHeading, RegistrationMarks } from "../components/Motion";
 
 const SIZES = ["A4", "A3", "A5"];
@@ -47,7 +49,10 @@ export default function Shop() {
   const [anyGame, setAnyGame] = useState("");
   const [anySize, setAnySize] = useState("A4");
   const [anyFraming, setAnyFraming] = useState("unframed");
+  const { user } = useAuth();
   const { addItem } = useCart();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     Promise.all([api.get("/products/posters"), api.get("/pricing")])
@@ -71,12 +76,14 @@ export default function Shop() {
     });
 
   const addCatalog = (p) => {
+    if (!user) { navigate(`/auth?next=${encodeURIComponent(location.pathname)}`); return; }
     const { size, framing } = cardSel(p.id);
     addItem({ kind: "poster", product_id: p.id, title: p.title, game: p.game, size, framing, unit_price: priceFor(pricing, size, framing), qty: 1, image_url: p.image_url, image_path: p.image_path });
     toast.success(`${p.title} · ${size} ${framing} — added to your cart`);
   };
 
   const addAnyGame = () => {
+    if (!user) { navigate(`/auth?next=${encodeURIComponent(location.pathname)}`); return; }
     if (!anyGame.trim()) { toast.error("Tell us which game first"); return; }
     const price = priceFor(pricing, anySize, anyFraming);
     addItem({ kind: "poster", title: `${anyGame.trim()} — Game Poster`, game: anyGame.trim(), size: anySize, framing: anyFraming, unit_price: price, qty: 1 });

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { UploadCloud } from "lucide-react";
 import api, { fileUrl, formatApiError } from "../lib/api";
@@ -11,8 +11,10 @@ const SIZES = ["A4", "A3", "A5"];
 const FALLBACK = { A4: { framed: 259, unframed: 149 }, A3: { framed: 399, unframed: 179 }, A5: { unframed: 89 } };
 
 export default function CustomPoster() {
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const { addItem } = useCart();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [pricing, setPricing] = useState(FALLBACK);
   const [size, setSize] = useState("A4");
   const [framing, setFraming] = useState("unframed");
@@ -29,6 +31,7 @@ export default function CustomPoster() {
 
   const onFile = async (file) => {
     if (!file) return;
+    if (!user) { navigate(`/auth?next=${encodeURIComponent(location.pathname)}`); return; }
     setUploading(true);
     try {
       const form = new FormData();
@@ -45,22 +48,11 @@ export default function CustomPoster() {
   };
 
   const add = () => {
+    if (!user) { navigate(`/auth?next=${encodeURIComponent(location.pathname)}`); return; }
     if (!imagePath) { toast.error("Upload your artwork first"); return; }
     addItem({ kind: "custom", title: "Custom Commission", game: fileName || "Your artwork", size, framing, unit_price: price, qty: 1, image_path: imagePath });
     toast.success(`Custom print · ${size} ${framing} — added to your cart`);
   };
-
-  if (!authLoading && !user) {
-    return (
-      <div className="mx-auto max-w-2xl px-5 py-32 text-center" data-testid="custom-auth-required">
-        <h1 className="font-serif-press text-4xl text-ink tracking-tight">Sign in to commission a print</h1>
-        <p className="text-smoke mt-4 text-base">Your artwork stays attached to your account, so we need to know who you are first.</p>
-        <Link to="/auth?next=/custom" data-testid="custom-signin-button" className="mt-8 inline-block bg-terra text-paper px-6 py-3 font-mono-press text-xs uppercase tracking-widest hover:bg-terra-dark transition-colors">
-          Sign in or register
-        </Link>
-      </div>
-    );
-  }
 
   return (
     <div className="mx-auto max-w-7xl px-5 md:px-8 py-16 md:py-24" data-testid="custom-poster-page">

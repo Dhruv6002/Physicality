@@ -1,14 +1,19 @@
 import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Disc3, Gift } from "lucide-react";
 import api from "../lib/api";
 import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext";
 import { Reveal, SectionHeading, RegistrationMarks } from "../components/Motion";
 
 const DVD_CASE = "https://images.pexels.com/photos/93388/pexels-photo-93388.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940";
 
 export default function CoverArt() {
+  const { user } = useAuth();
   const { addItem } = useCart();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [game, setGame] = useState("");
   const [platform, setPlatform] = useState("PlayStation 5");
   const [price, setPrice] = useState(199);
@@ -22,6 +27,7 @@ export default function CoverArt() {
   }, []);
 
   const add = () => {
+    if (!user) { navigate(`/auth?next=${encodeURIComponent(location.pathname)}`); return; }
     if (!game.trim()) { toast.error("Tell us which game first"); return; }
     addItem({ kind: "cover", title: `${game.trim()} — DVD Cover Box`, game: game.trim(), platform, unit_price: price, qty: 1 });
     toast.success(`${game.trim()} · ${platform} — added to your cart`);

@@ -923,6 +923,8 @@ app.include_router(api_router)
 frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 allowed_origins = {
     frontend_url,
+    "https://www.physicality.in",
+    "https://physicality.in",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:3001",

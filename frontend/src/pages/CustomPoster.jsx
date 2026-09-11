@@ -47,7 +47,7 @@ export default function CustomPoster() {
   const add = () => {
     if (!imagePath) { toast.error("Upload your artwork first"); return; }
     addItem({ kind: "custom", title: "Custom Commission", game: fileName || "Your artwork", size, framing, unit_price: price, qty: 1, image_path: imagePath });
-    toast.success(`Custom print · ${size} ${framing} — pressed into your cart`);
+    toast.success(`Custom print · ${size} ${framing} — added to your cart`);
   };
 
   if (!authLoading && !user) {

@@ -24,7 +24,7 @@ export default function CoverArt() {
   const add = () => {
     if (!game.trim()) { toast.error("Tell us which game first"); return; }
     addItem({ kind: "cover", title: `${game.trim()} — DVD Cover Box`, game: game.trim(), platform, unit_price: price, qty: 1 });
-    toast.success(`${game.trim()} · ${platform} — pressed into your cart`);
+    toast.success(`${game.trim()} · ${platform} — added to your cart`);
     setGame("");
   };
 

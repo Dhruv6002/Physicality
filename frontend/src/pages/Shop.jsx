@@ -73,14 +73,14 @@ export default function Shop() {
   const addCatalog = (p) => {
     const { size, framing } = cardSel(p.id);
     addItem({ kind: "poster", product_id: p.id, title: p.title, game: p.game, size, framing, unit_price: priceFor(pricing, size, framing), qty: 1, image_url: p.image_url, image_path: p.image_path });
-    toast.success(`${p.title} · ${size} ${framing} — pressed into your cart`);
+    toast.success(`${p.title} · ${size} ${framing} — added to your cart`);
   };
 
   const addAnyGame = () => {
     if (!anyGame.trim()) { toast.error("Tell us which game first"); return; }
     const price = priceFor(pricing, anySize, anyFraming);
     addItem({ kind: "poster", title: `${anyGame.trim()} — Game Poster`, game: anyGame.trim(), size: anySize, framing: anyFraming, unit_price: price, qty: 1 });
-    toast.success(`${anyGame.trim()} · ${anySize} ${anyFraming} — pressed into your cart`);
+    toast.success(`${anyGame.trim()} · ${anySize} ${anyFraming} — added to your cart`);
     setAnyGame("");
   };
 

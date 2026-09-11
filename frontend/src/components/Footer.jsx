@@ -26,6 +26,7 @@ export default function Footer() {
             <Link to="/account" className="text-ink link-underline w-fit">Track order</Link>
             <Link to="/account" className="text-ink link-underline w-fit">My orders</Link>
             <Link to="/admin" className="text-ink link-underline w-fit">Admin</Link>
+            <a href="mailto:physicality.in@gmail.com" className="text-ink link-underline w-fit">Contact us</a>
           </div>
         </div>
       </div>

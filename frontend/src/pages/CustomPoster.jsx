@@ -58,7 +58,6 @@ export default function CustomPoster() {
       const form = new FormData();
       form.append("file", file);
       const { data } = await api.post("/upload", form, {
-        headers: { "Content-Type": "multipart/form-data" },
         onUploadProgress: (event) => {
           if (event.total) setUploadProgress(Math.round((event.loaded / event.total) * 100));
         },
@@ -70,6 +69,7 @@ export default function CustomPoster() {
       toast.error(formatApiError(e));
     } finally {
       setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
     }
   };
 
@@ -86,7 +86,7 @@ export default function CustomPoster() {
 
   return (
     <div className="mx-auto max-w-7xl px-5 md:px-8 py-16 md:py-24" data-testid="custom-poster-page">
-      <SectionHeading index="N° 03" title={<>A custom <span className="italic">commission</span></>} className="mb-14" />
+      <SectionHeading title={<>A custom <span className="italic">commission</span></>} className="mb-14" />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
         <Reveal>
           <div

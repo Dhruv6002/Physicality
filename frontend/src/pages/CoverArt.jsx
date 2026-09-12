@@ -36,7 +36,7 @@ export default function CoverArt() {
 
   return (
     <div className="mx-auto max-w-7xl px-5 md:px-8 py-16 md:py-24" data-testid="cover-art-page">
-      <SectionHeading index="N° 02" title={<>DVD cover <span className="italic">boxes</span></>} className="mb-14" />
+      <SectionHeading title={<>DVD cover <span className="italic">boxes</span></>} className="mb-14" />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
         <Reveal className="relative">
           <div className="relative border border-ink">

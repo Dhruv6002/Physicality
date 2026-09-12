@@ -44,7 +44,7 @@ export function SectionHeading({ index, title, className = "" }) {
   return (
     <Reveal className={className}>
       <div className="flex items-baseline gap-4 border-t border-ink pt-4">
-        <span className="font-mono-press text-xs uppercase tracking-[0.2em] text-terra">{index}</span>
+        {index && <span className="font-mono-press text-xs uppercase tracking-[0.2em] text-terra">{index}</span>}
         <h2 className="font-serif-press text-3xl md:text-4xl tracking-tight leading-[1.1] text-ink">{title}</h2>
       </div>
     </Reveal>

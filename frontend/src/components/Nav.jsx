@@ -24,8 +24,9 @@ export default function Nav() {
     <header className="fixed top-0 left-0 right-0 z-50 bg-paper border-b border-ink" data-testid="main-nav">
       <div className="mx-auto max-w-7xl px-5 md:px-8 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-3" data-testid="nav-brand-link">
-          <img src="/brand/logo-mark.png" alt="Physicality" className="h-9 w-auto" />
-          <span className="font-mono-press text-sm tracking-[0.35em] text-ink">PHYSICALITY</span>
+          <span className="h-9 w-9 overflow-hidden shrink-0" aria-hidden="true">
+            <img src="/images/35955364946.png" alt="Physicality" className="h-full w-full object-cover object-[50%_40%] scale-[2.2]" />
+          </span>
         </Link>
 
         <nav className="hidden lg:flex items-center gap-4 xl:gap-6">

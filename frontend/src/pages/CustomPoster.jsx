@@ -19,8 +19,11 @@ export default function CustomPoster() {
   const [size, setSize] = useState("A4");
   const [framing, setFraming] = useState("unframed");
   const [imagePath, setImagePath] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [dimensions, setDimensions] = useState(null);
   const [fileName, setFileName] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const inputRef = useRef(null);
 
   useEffect(() => {
@@ -31,14 +34,37 @@ export default function CustomPoster() {
 
   const onFile = async (file) => {
     if (!file) return;
+    if (!file.type.startsWith("image/") || !["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      toast.error("Please choose a JPG, PNG or WEBP image");
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error("Image must be under 8 MB");
+      return;
+    }
     if (!user) { navigate(`/auth?next=${encodeURIComponent(location.pathname)}`); return; }
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    const localPreview = URL.createObjectURL(file);
+    setPreviewUrl(localPreview);
+    setDimensions(null);
+    setImagePath(null);
+    setFileName(file.name);
+    setUploadProgress(0);
+    const image = new Image();
+    image.onload = () => setDimensions({ width: image.naturalWidth, height: image.naturalHeight });
+    image.src = localPreview;
     setUploading(true);
     try {
       const form = new FormData();
       form.append("file", file);
-      const { data } = await api.post("/upload", form, { headers: { "Content-Type": "multipart/form-data" } });
+      const { data } = await api.post("/upload", form, {
+        headers: { "Content-Type": "multipart/form-data" },
+        onUploadProgress: (event) => {
+          if (event.total) setUploadProgress(Math.round((event.loaded / event.total) * 100));
+        },
+      });
       setImagePath(data.path);
-      setFileName(file.name);
+      setUploadProgress(100);
       toast.success("Artwork received by the press");
     } catch (e) {
       toast.error(formatApiError(e));
@@ -46,6 +72,10 @@ export default function CustomPoster() {
       setUploading(false);
     }
   };
+
+  useEffect(() => () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+  }, [previewUrl]);
 
   const add = () => {
     if (!user) { navigate(`/auth?next=${encodeURIComponent(location.pathname)}`); return; }
@@ -64,19 +94,25 @@ export default function CustomPoster() {
             data-testid="artwork-dropzone"
             className="relative cursor-pointer border border-dashed border-ink bg-paper2 hover:bg-line/40 transition-colors aspect-[1/1.25] flex items-center justify-center overflow-hidden"
           >
-            {imagePath ? (
+            {previewUrl ? (
               <>
-                <img src={fileUrl(imagePath)} alt="Your uploaded artwork" className="w-full h-full object-cover" data-testid="artwork-preview" />
+                <img src={previewUrl || fileUrl(imagePath)} alt="Your uploaded artwork" className="w-full h-full object-cover" data-testid="artwork-preview" />
                 <RegistrationMarks />
-                <span className="absolute bottom-3 left-3 font-mono-press text-[10px] uppercase tracking-[0.2em] bg-paper border border-ink px-2 py-1">
-                  {fileName}
-                </span>
+                <div className="absolute inset-x-3 bottom-3 flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-mono-press text-[10px] uppercase tracking-[0.2em] bg-paper border border-ink px-2 py-1">{fileName}</span>
+                  {dimensions && <span className="font-mono-press text-[10px] uppercase tracking-[0.15em] bg-paper border border-ink px-2 py-1">{dimensions.width} × {dimensions.height}px</span>}
+                </div>
+                {uploading && (
+                  <div className="absolute inset-x-0 bottom-0 h-1 bg-paper/70" aria-label={`Uploading ${uploadProgress}%`}>
+                    <div className="h-full bg-terra transition-[width]" style={{ width: `${uploadProgress}%` }} />
+                  </div>
+                )}
               </>
             ) : (
               <div className="text-center px-8">
                 <UploadCloud className="mx-auto text-terra" size={32} />
                 <p className="font-serif-press italic text-2xl text-ink mt-5">
-                  {uploading ? "Pressing your artwork…" : "Drop your artwork here"}
+                  {uploading ? `Pressing your artwork… ${uploadProgress}%` : "Drop your artwork here"}
                 </p>
                 <p className="font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke mt-3">JPG · PNG · WEBP — up to 8 MB</p>
               </div>

@@ -621,7 +621,8 @@ async def upload(file: UploadFile = File(...), user: Optional[dict] = Depends(ge
         (UPLOAD_DIR / path.replace("/", "_")).write_bytes(data)
     await db.files.insert_one({
         "storage_path": path, "original_filename": file.filename, "content_type": content_type,
-        "size": len(data), "driver": driver, "user_id": owner if user else None, "is_deleted": False,
+        "size": len(data), "driver": driver, "data": data if driver == "local" else None,
+        "user_id": owner if user else None, "is_deleted": False,
         "created_at": datetime.now(timezone.utc)})
     return {"path": path}
 
@@ -646,9 +647,12 @@ async def download_file(path: str, authorization: str = Header(None), auth: str 
         data, ct = get_object(path)
         return RawResponse(content=data, media_type=record.get("content_type", ct))
     local = UPLOAD_DIR / path.replace("/", "_")
+    if local.exists():
+        return RawResponse(content=local.read_bytes(), media_type=record.get("content_type", "application/octet-stream"))
+    if record.get("data") is not None:
+        return RawResponse(content=bytes(record["data"]), media_type=record.get("content_type", "application/octet-stream"))
     if not local.exists():
         raise HTTPException(status_code=404, detail="File not found")
-    return RawResponse(content=local.read_bytes(), media_type=record.get("content_type", "application/octet-stream"))
 
 
 # ---------- Orders ----------

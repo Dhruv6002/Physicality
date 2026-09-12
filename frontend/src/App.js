@@ -38,6 +38,7 @@ function AppShell() {
           <Route path="/cover-art" element={<CoverArt />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/account" element={<Account />} />
           <Route path="/admin" element={<Admin />} />
         </Routes>

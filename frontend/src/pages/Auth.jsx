@@ -23,9 +23,8 @@ export default function Auth() {
     if (user) navigate(params.get("next") || "/account");
   }, [user, navigate, params]);
 
-  // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
   const googleSignIn = () => {
-    const redirectUrl = window.location.origin + "/account";
+    const redirectUrl = window.location.origin + "/auth/callback";
     window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
   };
 

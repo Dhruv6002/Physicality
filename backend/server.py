@@ -305,6 +305,18 @@ def public_user(doc: dict) -> dict:
             "role": doc.get("role", "customer"), "picture": doc.get("picture")}
 
 
+def tracking_url(tracking_id: Optional[str], courier: Optional[str]) -> Optional[str]:
+    if not tracking_id or not courier:
+        return None
+    key = courier.strip().lower().replace(" ", "")
+    encoded_id = httpx.URL("https://tracking.invalid/").copy_with(path=tracking_id).path.lstrip("/")
+    if key == "delhivery":
+        return f"https://www.delhivery.com/track/package/{encoded_id}"
+    if key == "indiapost":
+        return f"https://www.indiapost.gov.in/_layouts/15/dop.portal.tracking/trackconsignment.aspx?consignment={encoded_id}"
+    return None
+
+
 def decode_token(token: str) -> dict:
     try:
         return jwt.decode(token, get_jwt_secret(), algorithms=[JWT_ALGORITHM])
@@ -668,6 +680,7 @@ def order_response(doc: dict, include_tracking: bool = True) -> dict:
     if include_tracking:
         out["tracking_id"] = doc.get("tracking_id")
         out["courier"] = doc.get("courier")
+        out["tracking_url"] = tracking_url(doc.get("tracking_id"), doc.get("courier"))
     return out
 
 
@@ -864,13 +877,18 @@ async def admin_update_order(order_id: str, body: AdminOrderUpdate, admin: dict 
         update_q["$push"] = push
     await db.orders.update_one({"_id": order["_id"]}, update_q)
     updated = await db.orders.find_one({"_id": order["_id"]})
-    if body.status and body.status != order.get("status") and body.status in STATUS_HEADLINES:
+    status_changed = body.status and body.status != order.get("status")
+    tracking_added = updates.get("tracking_id") and updates.get("tracking_id") != order.get("tracking_id")
+    if (status_changed and body.status in STATUS_HEADLINES) or (tracking_added and order.get("status") in ("shipped", "delivered")):
         try:
+            subject = (f'{updated["order_no"]} — {STATUS_HEADLINES[body.status]}'
+                       if status_changed and body.status in STATUS_HEADLINES
+                       else f'{updated["order_no"]} — Your tracking details are ready')
             await send_email(
                 to=updated["user_email"],
-                subject=f'{updated["order_no"]} — {STATUS_HEADLINES[body.status]}',
-                html=status_email_html(updated, body.status))
-            logger.info(f"Status email sent for {updated['order_no']} ({body.status})")
+                subject=subject,
+                html=status_email_html(updated, updated["status"]))
+            logger.info(f"Order update email sent for {updated['order_no']}")
         except Exception as e:
             logger.error(f"Status email failed for {updated.get('order_no')}: {e}")
     return order_response(updated)

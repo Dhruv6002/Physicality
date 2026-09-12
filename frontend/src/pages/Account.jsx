@@ -114,7 +114,9 @@ export default function Account() {
                   {o.tracking_id ? (
                     <p className="font-mono-press text-xs text-ink" data-testid={`tracking-${o.order_no}`}>
                       <span className="uppercase tracking-[0.2em] text-smoke">Tracking&nbsp;·&nbsp;</span>
-                      {o.tracking_id}
+                      {o.tracking_url ? (
+                        <a href={o.tracking_url} target="_blank" rel="noreferrer" className="link-underline">{o.tracking_id}</a>
+                      ) : o.tracking_id}
                       {o.courier && <span className="text-smoke"> — {o.courier}</span>}
                     </p>
                   ) : o.promo_applied ? (

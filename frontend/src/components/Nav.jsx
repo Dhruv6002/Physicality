@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X } from "lucide-react";
+import { Menu, ShoppingBag, X } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 
@@ -9,7 +9,7 @@ const LINKS = [
   { to: "/shop", label: "Posters" },
   { to: "/custom", label: "Custom Poster" },
   { to: "/cover-art", label: "DVD Cover" },
-  { to: "/account", label: "Track Order" },
+  { to: "/track-order", label: "Track Order" },
 ];
 
 export default function Nav() {
@@ -29,7 +29,7 @@ export default function Nav() {
           <span className="hidden lg:inline font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke">Press Nº 01</span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-6">
+        <nav className="hidden lg:flex items-center gap-4 xl:gap-6">
           {LINKS.map((l) => (
             <Link key={l.to} to={l.to} className={linkCls} data-testid={`nav-${l.label.toLowerCase().replace(/\s+/g, "-")}`}>
               {l.label}
@@ -40,7 +40,7 @@ export default function Nav() {
           )}
         </nav>
 
-        <div className="hidden md:flex items-center gap-6">
+        <div className="hidden lg:flex items-center gap-4 xl:gap-6">
           {user ? (
             <>
               <Link to="/account" className={linkCls} data-testid="nav-account">{user.name.split(" ")[0]}'s Shelf</Link>
@@ -60,9 +60,15 @@ export default function Nav() {
           </Link>
         </div>
 
-        <button className="md:hidden text-ink" onClick={() => setOpen(!open)} data-testid="nav-menu-toggle" aria-label="Menu">
-          {open ? <X size={22} /> : <Menu size={22} />}
-        </button>
+        <div className="flex lg:hidden items-center gap-4">
+          <Link to="/cart" className="relative text-ink" data-testid="nav-mobile-cart" aria-label={`Cart with ${count} items`}>
+            <ShoppingBag size={20} />
+            {count > 0 && <span className="absolute -right-2 -top-2 min-w-4 h-4 px-1 flex items-center justify-center bg-terra text-paper font-mono-press text-[9px]">{count}</span>}
+          </Link>
+          <button className="text-ink" onClick={() => setOpen(!open)} data-testid="nav-menu-toggle" aria-label="Menu">
+            {open ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        </div>
       </div>
 
       <AnimatePresence>
@@ -72,7 +78,7 @@ export default function Nav() {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-            className="md:hidden overflow-hidden border-t border-line bg-paper"
+            className="lg:hidden overflow-hidden border-t border-line bg-paper"
             data-testid="nav-mobile-menu"
           >
             <div className="px-5 py-6 flex flex-col gap-5">

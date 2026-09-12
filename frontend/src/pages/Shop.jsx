@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import api, { productImage } from "../lib/api";
@@ -49,10 +49,23 @@ export default function Shop() {
   const [anyGame, setAnyGame] = useState("");
   const [anySize, setAnySize] = useState("A4");
   const [anyFraming, setAnyFraming] = useState("unframed");
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState("edition");
   const { user } = useAuth();
   const { addItem } = useCart();
   const location = useLocation();
   const navigate = useNavigate();
+
+  const visiblePosters = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return [...posters]
+      .filter((poster) => !needle || `${poster.title} ${poster.game}`.toLowerCase().includes(needle))
+      .sort((left, right) => {
+        if (sort === "price-low") return priceFor(pricing, left.default_size || "A4", "unframed") - priceFor(pricing, right.default_size || "A4", "unframed");
+        if (sort === "price-high") return priceFor(pricing, right.default_size || "A4", "unframed") - priceFor(pricing, left.default_size || "A4", "unframed");
+        return String(left.edition).localeCompare(String(right.edition), undefined, { numeric: true });
+      });
+  }, [posters, pricing, query, sort]);
 
   useEffect(() => {
     Promise.all([api.get("/products/posters"), api.get("/pricing")])
@@ -94,6 +107,27 @@ export default function Shop() {
   return (
     <div className="mx-auto max-w-7xl px-5 md:px-8 py-16 md:py-24" data-testid="shop-page">
       <SectionHeading index="N° 01" title={<>Poster <span className="italic">catalog</span></>} className="mb-14" />
+
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-5 mb-8" data-testid="catalog-filters">
+        <label className="flex-1 max-w-xl">
+          <span className="font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke">Search the archive</span>
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search by game or title"
+            data-testid="catalog-search"
+            className="mt-2 w-full bg-transparent border-b border-ink focus:border-terra outline-none py-2 font-serif-press italic text-2xl text-ink placeholder:text-smoke/50"
+          />
+        </label>
+        <label className="font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke">
+          Sort by
+          <select value={sort} onChange={(event) => setSort(event.target.value)} data-testid="catalog-sort" className="block mt-2 bg-paper border border-ink px-3 py-2 text-ink outline-none">
+            <option value="edition">Edition</option>
+            <option value="price-low">Price: low to high</option>
+            <option value="price-high">Price: high to low</option>
+          </select>
+        </label>
+      </div>
 
       {/* ANY GAME PANEL */}
       <Reveal className="border border-ink p-6 md:p-10 mb-16 bg-paper2/50" data-testid="any-game-panel">
@@ -137,7 +171,7 @@ export default function Shop() {
         <p className="font-mono-press text-xs uppercase tracking-[0.2em] text-smoke" data-testid="shop-loading">Loading the catalogue…</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-line border border-line" data-testid="catalog-grid">
-          {posters.map((p, i) => {
+          {visiblePosters.map((p, i) => {
             const { size, framing } = cardSel(p.id);
             return (
               <Reveal key={p.id} delay={(i % 4) * 0.07} className="bg-paper flex flex-col group" data-testid={`poster-card-${p.id}`}>
@@ -174,6 +208,11 @@ export default function Shop() {
             );
           })}
         </div>
+      )}
+      {!loading && visiblePosters.length === 0 && (
+        <p className="border border-line p-10 text-center font-mono-press text-xs uppercase tracking-[0.15em] text-smoke" data-testid="catalog-no-results">
+          No editions match that search.
+        </p>
       )}
     </div>
   );

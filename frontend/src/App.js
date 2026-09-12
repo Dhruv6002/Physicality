@@ -16,6 +16,7 @@ import Cart from "@/pages/Cart";
 import Auth from "@/pages/Auth";
 import Account from "@/pages/Account";
 import Admin from "@/pages/Admin";
+import TrackOrder from "@/pages/TrackOrder";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -39,6 +40,7 @@ function AppShell() {
           <Route path="/cart" element={<Cart />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/track-order" element={<TrackOrder />} />
           <Route path="/account" element={<Account />} />
           <Route path="/admin" element={<Admin />} />
         </Routes>

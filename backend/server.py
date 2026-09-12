@@ -768,6 +768,15 @@ async def my_orders(user: dict = Depends(get_current_user)):
     return [order_response(d, include_tracking=not d.get("promo_applied", False)) for d in docs]
 
 
+@api_router.get("/orders/track")
+async def track_order(order_no: str = Query(..., min_length=3), email: str = Query(..., min_length=3)):
+    order = await db.orders.find_one({"order_no": order_no.strip().upper(), "user_email": email.strip().lower()})
+    if not order:
+        raise HTTPException(status_code=404, detail="We could not find an order with those details")
+    response = order_response(order, include_tracking=not order.get("promo_applied", False))
+    return {key: response[key] for key in ("order_no", "status", "status_history", "tracking_id", "courier", "tracking_url", "created_at") if key in response}
+
+
 # ---------- Payments (Razorpay) ----------
 def razorpay_client():
     key = os.environ.get("RAZORPAY_KEY_ID", "").strip()

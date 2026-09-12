@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 export default function Footer() {
+  const { user } = useAuth();
   return (
     <footer className="border-t border-ink bg-paper" data-testid="main-footer">
       <div className="mx-auto max-w-7xl px-5 md:px-8 py-16 grid grid-cols-1 md:grid-cols-12 gap-12">
@@ -23,9 +25,9 @@ export default function Footer() {
         <div className="md:col-span-3">
           <p className="font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke mb-4">Support</p>
           <div className="flex flex-col gap-3 font-mono-press text-xs uppercase tracking-[0.15em]">
-            <Link to="/account" className="text-ink link-underline w-fit">Track order</Link>
+            <Link to="/track-order" className="text-ink link-underline w-fit">Track order</Link>
             <Link to="/account" className="text-ink link-underline w-fit">My orders</Link>
-            <Link to="/admin" className="text-ink link-underline w-fit">Admin</Link>
+            {user?.role === "admin" && <Link to="/admin" className="text-ink link-underline w-fit">Admin</Link>}
             <a href="mailto:physicality.in@gmail.com" className="text-ink link-underline w-fit">physicality.in@gmail.com</a>
           </div>
         </div>

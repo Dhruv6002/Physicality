@@ -206,6 +206,11 @@ export default function Cart() {
               <p className="mt-4 font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke leading-relaxed">
                 Secure checkout via Razorpay. Coded orders show press progress only; uncoded orders also receive a tracking number.
               </p>
+              <div className="mt-6 border-t border-line pt-5 space-y-2 font-mono-press text-[10px] uppercase tracking-[0.12em] text-smoke">
+                <p>Ships in 5–7 working days</p>
+                <p>Printed to order in India</p>
+                <p>Support: physicality.in@gmail.com</p>
+              </div>
             </div>
           </div>
         </div>

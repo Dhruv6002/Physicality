@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { Disc3, Gift } from "lucide-react";
 import api from "../lib/api";
 import { useCart } from "../context/CartContext";
-import { Reveal, SectionHeading, RegistrationMarks } from "../components/Motion";
+import { Reveal, SectionHeading } from "../components/Motion";
 
 const DVD_CASE = "/images/ChatGPT Image Sep 12, 2026, 10_11_11 PM.png";
 
@@ -35,7 +35,6 @@ export default function CoverArt() {
         <Reveal className="relative">
           <div className="relative border border-ink">
             <img src={DVD_CASE} alt="A DVD box awaiting its cover art" className="w-full aspect-square object-cover" />
-            <RegistrationMarks />
           </div>
           <div className="mt-4 border border-terra bg-paper2 p-5 flex items-start gap-4">
             <Gift size={20} className="text-terra shrink-0 mt-0.5" />

@@ -25,7 +25,7 @@ export default function Nav() {
       <div className="mx-auto max-w-7xl px-5 md:px-8 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-3" data-testid="nav-brand-link">
           <span className="h-9 w-9 overflow-hidden shrink-0" aria-hidden="true">
-            <img src="/images/35955364946.png" alt="Physicality" className="h-full w-full object-cover object-[50%_40%] scale-[2.2]" />
+            <img src="/images/35955364946-mark.png" alt="Physicality" className="h-full w-full object-contain" />
           </span>
         </Link>
 

@@ -633,12 +633,15 @@ async def download_file(path: str, authorization: str = Header(None), auth: str 
         token = authorization[7:]
     elif auth:
         token = auth
-    if not token:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    decode_token(token)
     record = await db.files.find_one({"storage_path": path, "is_deleted": False})
     if not record:
         raise HTTPException(status_code=404, detail="File not found")
+    if token:
+        decode_token(token)
+    else:
+        public_product = await db.products.find_one({"kind": "poster", "image_path": path})
+        if not public_product:
+            raise HTTPException(status_code=401, detail="Not authenticated")
     if record.get("driver") == "remote" and storage_enabled:
         data, ct = get_object(path)
         return RawResponse(content=data, media_type=record.get("content_type", ct))

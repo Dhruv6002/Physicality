@@ -5,7 +5,7 @@ import api from "../lib/api";
 import { useCart } from "../context/CartContext";
 import { Reveal, SectionHeading, RegistrationMarks } from "../components/Motion";
 
-const DVD_CASE = "https://images.pexels.com/photos/93388/pexels-photo-93388.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940";
+const DVD_CASE = "/images/ChatGPT Image Sep 12, 2026, 10_11_11 PM.png";
 
 export default function CoverArt() {
   const { addItem } = useCart();

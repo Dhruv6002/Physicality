@@ -18,9 +18,8 @@ export default function Home() {
       {/* MASTHEAD RULE */}
       <div className="border-b border-ink" data-testid="masthead-bar">
         <div className="mx-auto max-w-7xl px-5 md:px-8 py-3 flex items-center justify-between font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke">
-          <span>Vol. I &nbsp;·&nbsp; Issue 01 &nbsp;·&nbsp; 2026</span>
+          <span>Physical editions for game collectors</span>
           <span className="hidden md:inline">Printed in India &nbsp;·&nbsp; ₹89 – ₹399</span>
-          <span>N° 001</span>
         </div>
       </div>
 
@@ -97,7 +96,7 @@ export default function Home() {
       <section className="border-b border-ink" data-testid="panels-section">
         <div className="mx-auto max-w-7xl grid grid-cols-1 md:grid-cols-2 border-x border-ink">
           <Reveal className="px-6 md:px-12 py-20 md:py-28 border-b md:border-b-0 md:border-r border-ink group hover:bg-paper2 transition-colors duration-500">
-            <p className="font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke">N° 01 / Posters</p>
+            <p className="font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke">Posters</p>
             <h2 className="font-serif-press text-4xl md:text-5xl tracking-tight leading-[1.05] text-ink mt-6">
               A frame for<br /><span className="italic">every fan.</span>
             </h2>
@@ -109,7 +108,7 @@ export default function Home() {
             </Link>
           </Reveal>
           <Reveal delay={0.12} className="px-6 md:px-12 py-20 md:py-28 group hover:bg-paper2 transition-colors duration-500">
-            <p className="font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke">N° 02 / DVD cover boxes</p>
+            <p className="font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke">DVD cover boxes</p>
             <h2 className="font-serif-press text-4xl md:text-5xl tracking-tight leading-[1.05] text-ink mt-6">
               A box for<br /><span className="italic">your digital.</span>
             </h2>

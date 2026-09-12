@@ -1,9 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { UploadCloud } from "lucide-react";
 import api, { fileUrl, formatApiError } from "../lib/api";
-import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { Reveal, SectionHeading, RegistrationMarks } from "../components/Motion";
 
@@ -11,10 +9,7 @@ const SIZES = ["A4", "A3", "A5"];
 const FALLBACK = { A4: { framed: 259, unframed: 149 }, A3: { framed: 399, unframed: 179 }, A5: { unframed: 89 } };
 
 export default function CustomPoster() {
-  const { user } = useAuth();
   const { addItem } = useCart();
-  const location = useLocation();
-  const navigate = useNavigate();
   const [pricing, setPricing] = useState(FALLBACK);
   const [size, setSize] = useState("A4");
   const [framing, setFraming] = useState("unframed");
@@ -34,7 +29,10 @@ export default function CustomPoster() {
 
   const onFile = async (file) => {
     if (!file) return;
-    if (!file.type.startsWith("image/") || !["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    const extension = file.name?.split(".").pop()?.toLowerCase();
+    const supportedExtensions = ["jpg", "jpeg", "png", "webp"];
+    const supportedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    if ((!file.type && !supportedExtensions.includes(extension)) || (file.type && !supportedTypes.includes(file.type))) {
       toast.error("Please choose a JPG, PNG or WEBP image");
       return;
     }
@@ -42,7 +40,6 @@ export default function CustomPoster() {
       toast.error("Image must be under 8 MB");
       return;
     }
-    if (!user) { navigate(`/auth?next=${encodeURIComponent(location.pathname)}`); return; }
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     const localPreview = URL.createObjectURL(file);
     setPreviewUrl(localPreview);
@@ -78,7 +75,6 @@ export default function CustomPoster() {
   }, [previewUrl]);
 
   const add = () => {
-    if (!user) { navigate(`/auth?next=${encodeURIComponent(location.pathname)}`); return; }
     if (!imagePath) { toast.error("Upload your artwork first"); return; }
     addItem({ kind: "custom", title: "Custom Commission", game: fileName || "Your artwork", size, framing, unit_price: price, qty: 1, image_path: imagePath });
     toast.success(`Custom print · ${size} ${framing} — added to your cart`);
@@ -120,7 +116,7 @@ export default function CustomPoster() {
             <input
               ref={inputRef}
               type="file"
-              accept="image/jpeg,image/png,image/webp"
+              accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
               className="hidden"
               data-testid="artwork-file-input"
               onChange={(e) => onFile(e.target.files?.[0])}

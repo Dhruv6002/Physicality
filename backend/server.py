@@ -355,6 +355,13 @@ async def get_current_user(request: Request) -> dict:
     raise HTTPException(status_code=401, detail="Not authenticated")
 
 
+async def get_optional_user(request: Request) -> Optional[dict]:
+    try:
+        return await get_current_user(request)
+    except HTTPException:
+        return None
+
+
 async def require_admin(user: dict = Depends(get_current_user)) -> dict:
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
@@ -590,14 +597,15 @@ async def pricing():
 
 # ---------- Uploads ----------
 @api_router.post("/upload")
-async def upload(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
+async def upload(file: UploadFile = File(...), user: Optional[dict] = Depends(get_optional_user)):
     ext = (file.filename.rsplit(".", 1)[-1] if file.filename and "." in file.filename else "bin").lower()
     if ext not in MIME_TYPES:
         raise HTTPException(status_code=400, detail="Only JPG, PNG or WEBP images are accepted")
     data = await file.read()
     if len(data) > 8 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="Image must be under 8 MB")
-    path = f"{APP_NAME}/uploads/{user['_id']}/{uuid.uuid4()}.{ext}"
+    owner = str(user["_id"]) if user else "guest"
+    path = f"{APP_NAME}/uploads/{owner}/{uuid.uuid4()}.{ext}"
     content_type = MIME_TYPES[ext]
     driver = "remote"
     if storage_enabled:
@@ -613,7 +621,7 @@ async def upload(file: UploadFile = File(...), user: dict = Depends(get_current_
         (UPLOAD_DIR / path.replace("/", "_")).write_bytes(data)
     await db.files.insert_one({
         "storage_path": path, "original_filename": file.filename, "content_type": content_type,
-        "size": len(data), "driver": driver, "user_id": str(user["_id"]), "is_deleted": False,
+        "size": len(data), "driver": driver, "user_id": owner if user else None, "is_deleted": False,
         "created_at": datetime.now(timezone.utc)})
     return {"path": path}
 

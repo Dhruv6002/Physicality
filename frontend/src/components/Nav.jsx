@@ -26,7 +26,6 @@ export default function Nav() {
         <Link to="/" className="flex items-center gap-3" data-testid="nav-brand-link">
           <img src="/brand/logo-mark.png" alt="Physicality" className="h-9 w-auto" />
           <span className="font-mono-press text-sm tracking-[0.35em] text-ink">PHYSICALITY</span>
-          <span className="hidden lg:inline font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke">Press Nº 01</span>
         </Link>
 
         <nav className="hidden lg:flex items-center gap-4 xl:gap-6">

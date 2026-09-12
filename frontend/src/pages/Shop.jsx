@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import api, { productImage } from "../lib/api";
 import { useCart } from "../context/CartContext";
-import { useAuth } from "../context/AuthContext";
 import { Reveal, SectionHeading, RegistrationMarks } from "../components/Motion";
 
 const SIZES = ["A4", "A3", "A5"];
@@ -51,10 +49,7 @@ export default function Shop() {
   const [anyFraming, setAnyFraming] = useState("unframed");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("edition");
-  const { user } = useAuth();
   const { addItem } = useCart();
-  const location = useLocation();
-  const navigate = useNavigate();
 
   const visiblePosters = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -89,14 +84,12 @@ export default function Shop() {
     });
 
   const addCatalog = (p) => {
-    if (!user) { navigate(`/auth?next=${encodeURIComponent(location.pathname)}`); return; }
     const { size, framing } = cardSel(p.id);
     addItem({ kind: "poster", product_id: p.id, title: p.title, game: p.game, size, framing, unit_price: priceFor(pricing, size, framing), qty: 1, image_url: p.image_url, image_path: p.image_path });
     toast.success(`${p.title} · ${size} ${framing} — added to your cart`);
   };
 
   const addAnyGame = () => {
-    if (!user) { navigate(`/auth?next=${encodeURIComponent(location.pathname)}`); return; }
     if (!anyGame.trim()) { toast.error("Tell us which game first"); return; }
     const price = priceFor(pricing, anySize, anyFraming);
     addItem({ kind: "poster", title: `${anyGame.trim()} — Game Poster`, game: anyGame.trim(), size: anySize, framing: anyFraming, unit_price: price, qty: 1 });
@@ -106,7 +99,7 @@ export default function Shop() {
 
   return (
     <div className="mx-auto max-w-7xl px-5 md:px-8 py-16 md:py-24" data-testid="shop-page">
-      <SectionHeading index="N° 01" title={<>Poster <span className="italic">catalog</span></>} className="mb-14" />
+      <SectionHeading title={<>Poster <span className="italic">catalog</span></>} className="mb-14" />
 
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-5 mb-8" data-testid="catalog-filters">
         <label className="flex-1 max-w-xl">
@@ -182,7 +175,6 @@ export default function Shop() {
                     className="w-full aspect-[1/1.25] object-cover grayscale-[35%] transition-all duration-700 group-hover:grayscale-0 group-hover:scale-[1.03]"
                   />
                   <RegistrationMarks className="opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  <span className="absolute top-3 left-3 font-mono-press text-[10px] uppercase tracking-[0.2em] bg-paper border border-ink px-2 py-1">{p.edition}</span>
                 </div>
                 <div className="p-5 flex flex-col flex-1">
                   <p className="font-mono-press text-[10px] uppercase tracking-[0.2em] text-terra">{p.game}</p>

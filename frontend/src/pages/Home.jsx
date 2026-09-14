@@ -9,7 +9,7 @@ const GAMES = ["GTA VI", "Elden Ring", "Cyberpunk 2077", "The Last of Us", "God 
 const STEPS = [
   { num: "I.", title: "Pick a title", body: "Name any game, browse the menu, or bring your own artwork." },
   { num: "II.", title: "Set the format", body: "A4, A3 or A5 for posters — framed or unframed. PlayStation 5, PlayStation 4, Xbox or PC for cover boxes." },
-  { num: "III.", title: "Pay & track", body: "Razorpay checkout. Follow your order from press bench to your doorstep." },
+  { num: "III.", title: "Pay & track", body: "Razorpay checkout. Follow your order from cart to your doorstep." },
 ];
 
 export default function Home() {
@@ -133,7 +133,7 @@ export default function Home() {
             </h2>
             <p className="mt-6 text-base text-smoke leading-relaxed max-w-lg">
               Every order is printed to spec and shipped within 5–7 working days.
-              One order number follows it from the press bench to your door.
+              One order number follows it from the cart to your door.
             </p>
           </Reveal>
           <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-10">
@@ -153,7 +153,6 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-5 md:px-8 py-24 md:py-32 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
           <div className="lg:col-span-7">
             <Reveal>
-              <p className="font-mono-press text-xs uppercase tracking-[0.2em] text-terra mb-6">✦ Colophon</p>
               <h2 className="font-serif-press text-4xl md:text-6xl tracking-tight leading-[1.02] text-paper">
                 Ready to print something <span className="italic text-terra">worth keeping?</span>
               </h2>

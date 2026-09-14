@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import api from "../lib/api";
 import { useCart } from "../context/CartContext";
 import { Reveal, SectionHeading, RegistrationMarks } from "../components/Motion";
+import { Dialog, DialogContent, DialogTitle } from "../components/ui/dialog";
 
 const SIZES = ["A4", "A3", "A5"];
 const FALLBACK = { posters: { A4: { framed: 259, unframed: 149 }, A3: { framed: 399, unframed: 179 }, A5: { unframed: 89 } } };
@@ -12,16 +13,16 @@ const LOCAL_POSTERS = [
   ["Valorant", "WhatsApp Image 2026-09-14 at 7.59.48 PM.jpeg", "WhatsApp Image 2026-09-14 at 7.59.50 PM.jpeg"],
   ["Elden Ring", "WhatsApp Image 2026-09-14 at 7.59.50 PM (1).jpeg", "WhatsApp Image 2026-09-14 at 7.59.50 PM (2).jpeg"],
   ["God of War Ragnork", "WhatsApp Image 2026-09-14 at 7.59.51 PM.jpeg", "WhatsApp Image 2026-09-14 at 7.59.52 PM.jpeg"],
-  ["Forza HORIZON 5", "WhatsApp Image 2026-09-14 at 7.59.53 PM (1).jpeg", "WhatsApp Image 2026-09-14 at 7.59.53 PM (2).jpeg"],
-  ["Valorant", "WhatsApp Image 2026-09-14 at 7.59.54 PM.jpeg", "WhatsApp Image 2026-09-14 at 7.59.57 PM.jpeg"],
-  ["Ghost of Yotei", "WhatsApp Image 2026-09-14 at 7.59.57 PM (1).jpeg", "WhatsApp Image 2026-09-14 at 7.59.57 PM (2).jpeg"],
+  ["Resident Evil Requiem", "WhatsApp Image 2026-09-14 at 7.59.53 PM (1).jpeg", "WhatsApp Image 2026-09-14 at 7.59.53 PM (2).jpeg"],
+  ["Forza HORIZON 5", "WhatsApp Image 2026-09-14 at 7.59.54 PM.jpeg", "WhatsApp Image 2026-09-14 at 7.59.57 PM.jpeg"],
+  ["Valorant", "WhatsApp Image 2026-09-14 at 7.59.57 PM (1).jpeg", "WhatsApp Image 2026-09-14 at 7.59.57 PM (2).jpeg"],
   ["The Ghost of Yotei", "WhatsApp Image 2026-09-14 at 7.59.59 PM.jpeg", "WhatsApp Image 2026-09-14 at 8.00.01 PM.jpeg"],
   ["The Last of Us Part 2 Remastered", "WhatsApp Image 2026-09-14 at 8.00.01 PM (1).jpeg", "WhatsApp Image 2026-09-14 at 8.00.04 PM.jpeg"],
   ["Grand Theft Auto VI", "WhatsApp Image 2026-09-14 at 8.00.04 PM (1).jpeg", "WhatsApp Image 2026-09-14 at 8.00.05 PM.jpeg"],
   ["Elden Ring", "WhatsApp Image 2026-09-14 at 8.00.05 PM (1).jpeg", "WhatsApp Image 2026-09-14 at 8.00.06 PM.jpeg"],
   ["The Last of Us Part 2", "WhatsApp Image 2026-09-14 at 8.00.06 PM (1).jpeg", "WhatsApp Image 2026-09-14 at 8.00.06 PM (2).jpeg"],
   ["Minecraft", "WhatsApp Image 2026-09-14 at 8.00.07 PM.jpeg", "WhatsApp Image 2026-09-14 at 8.00.07 PM (1).jpeg"],
-  ["Red Dead Redemption", "WhatsApp Image 2026-09-14 at 8.00.08 PM.jpeg", "WhatsApp Image 2026-09-14 at 8.00.08 PM (1).jpeg"],
+  ["The Last of Us Part 2", "WhatsApp Image 2026-09-14 at 8.00.08 PM.jpeg", "WhatsApp Image 2026-09-14 at 8.00.08 PM (1).jpeg"],
   ["Red Dead Redemption", "WhatsApp Image 2026-09-14 at 8.00.08 PM (2).jpeg", "WhatsApp Image 2026-09-14 at 8.00.09 PM.jpeg"],
   ["Uncharted 4 : A Thiefs End", "WhatsApp Image 2026-09-14 at 8.00.09 PM (1).jpeg", "WhatsApp Image 2026-09-14 at 8.00.09 PM (2).jpeg"],
   ["Cyberpunk 2077", "WhatsApp Image 2026-09-14 at 8.00.10 PM.jpeg", "WhatsApp Image 2026-09-14 at 8.00.10 PM (1).jpeg"],
@@ -67,6 +68,7 @@ function Picker({ label, options, value, onChange, disabledOption, testPrefix })
 
 function PosterGallery({ poster }) {
   const [imageIndex, setImageIndex] = useState(0);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
   const startX = useRef(null);
   const currentImage = poster.images[imageIndex];
 
@@ -93,12 +95,19 @@ function PosterGallery({ poster }) {
       onPointerCancel={() => { startX.current = null; }}
       data-testid={`poster-gallery-${poster.id}`}
     >
-      <img
-        src={currentImage}
-        alt={`${poster.title} ${imageIndex === 0 ? "framed poster" : "poster in a room"}`}
-        className="w-full aspect-[1/1.25] object-cover grayscale-[20%] transition-all duration-300"
-        draggable="false"
-      />
+      <button
+        type="button"
+        onClick={() => setIsViewerOpen(true)}
+        aria-label={`View ${poster.title} image at full size`}
+        className="block w-full bg-paper2 cursor-zoom-in"
+      >
+        <img
+          src={currentImage}
+          alt={`${poster.title} ${imageIndex === 0 ? "framed poster" : "poster in a room"}`}
+          className="w-full aspect-[1/1.25] object-contain grayscale-[20%] transition-all duration-300"
+          draggable="false"
+        />
+      </button>
       <button
         type="button"
         onClick={() => showImage(imageIndex - 1)}
@@ -129,6 +138,16 @@ function PosterGallery({ poster }) {
         ))}
       </div>
       <RegistrationMarks className="opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-7xl border-ink bg-ink p-3 sm:p-5">
+          <DialogTitle className="sr-only">{poster.title} full-size image</DialogTitle>
+          <img
+            src={currentImage}
+            alt={`${poster.title} full-size ${imageIndex === 0 ? "framed poster" : "poster in a room"}`}
+            className="max-h-[90vh] w-full object-contain"
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

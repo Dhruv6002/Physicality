@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import api from "../lib/api";
 import { useCart } from "../context/CartContext";
 import { Reveal, SectionHeading, RegistrationMarks } from "../components/Motion";
@@ -14,16 +15,16 @@ const LOCAL_POSTERS = [
   ["Forza HORIZON 5", "WhatsApp Image 2026-09-14 at 7.59.53 PM (1).jpeg", "WhatsApp Image 2026-09-14 at 7.59.53 PM (2).jpeg"],
   ["Valorant", "WhatsApp Image 2026-09-14 at 7.59.54 PM.jpeg", "WhatsApp Image 2026-09-14 at 7.59.57 PM.jpeg"],
   ["Ghost of Yotei", "WhatsApp Image 2026-09-14 at 7.59.57 PM (1).jpeg", "WhatsApp Image 2026-09-14 at 7.59.57 PM (2).jpeg"],
-  ["The Last of Us Part 2 Remastered", "WhatsApp Image 2026-09-14 at 7.59.59 PM.jpeg", "WhatsApp Image 2026-09-14 at 8.00.01 PM.jpeg"],
-  ["Grand Theft Auto VI", "WhatsApp Image 2026-09-14 at 8.00.01 PM (1).jpeg", "WhatsApp Image 2026-09-14 at 8.00.04 PM.jpeg"],
-  ["Elden Ring", "WhatsApp Image 2026-09-14 at 8.00.04 PM (1).jpeg", "WhatsApp Image 2026-09-14 at 8.00.05 PM.jpeg"],
-  ["The Last of Us Part 2", "WhatsApp Image 2026-09-14 at 8.00.05 PM (1).jpeg", "WhatsApp Image 2026-09-14 at 8.00.06 PM.jpeg"],
-  ["Minecraft", "WhatsApp Image 2026-09-14 at 8.00.06 PM (1).jpeg", "WhatsApp Image 2026-09-14 at 8.00.06 PM (2).jpeg"],
-  ["The Last of Us Part 2", "WhatsApp Image 2026-09-14 at 8.00.07 PM.jpeg", "WhatsApp Image 2026-09-14 at 8.00.07 PM (1).jpeg"],
+  ["The Ghost of Yotei", "WhatsApp Image 2026-09-14 at 7.59.59 PM.jpeg", "WhatsApp Image 2026-09-14 at 8.00.01 PM.jpeg"],
+  ["The Last of Us Part 2 Remastered", "WhatsApp Image 2026-09-14 at 8.00.01 PM (1).jpeg", "WhatsApp Image 2026-09-14 at 8.00.04 PM.jpeg"],
+  ["Grand Theft Auto VI", "WhatsApp Image 2026-09-14 at 8.00.04 PM (1).jpeg", "WhatsApp Image 2026-09-14 at 8.00.05 PM.jpeg"],
+  ["Elden Ring", "WhatsApp Image 2026-09-14 at 8.00.05 PM (1).jpeg", "WhatsApp Image 2026-09-14 at 8.00.06 PM.jpeg"],
+  ["The Last of Us Part 2", "WhatsApp Image 2026-09-14 at 8.00.06 PM (1).jpeg", "WhatsApp Image 2026-09-14 at 8.00.06 PM (2).jpeg"],
+  ["Minecraft", "WhatsApp Image 2026-09-14 at 8.00.07 PM.jpeg", "WhatsApp Image 2026-09-14 at 8.00.07 PM (1).jpeg"],
   ["Red Dead Redemption", "WhatsApp Image 2026-09-14 at 8.00.08 PM.jpeg", "WhatsApp Image 2026-09-14 at 8.00.08 PM (1).jpeg"],
-  ["Uncharted 4 : A Thiefs End", "WhatsApp Image 2026-09-14 at 8.00.08 PM (2).jpeg", "WhatsApp Image 2026-09-14 at 8.00.09 PM.jpeg"],
-  ["Cyberpunk 2077", "WhatsApp Image 2026-09-14 at 8.00.09 PM (1).jpeg", "WhatsApp Image 2026-09-14 at 8.00.09 PM (2).jpeg"],
-  ["Resident Evil Requiem", "WhatsApp Image 2026-09-14 at 8.00.10 PM.jpeg", "WhatsApp Image 2026-09-14 at 8.00.10 PM (1).jpeg"],
+  ["Red Dead Redemption", "WhatsApp Image 2026-09-14 at 8.00.08 PM (2).jpeg", "WhatsApp Image 2026-09-14 at 8.00.09 PM.jpeg"],
+  ["Uncharted 4 : A Thiefs End", "WhatsApp Image 2026-09-14 at 8.00.09 PM (1).jpeg", "WhatsApp Image 2026-09-14 at 8.00.09 PM (2).jpeg"],
+  ["Cyberpunk 2077", "WhatsApp Image 2026-09-14 at 8.00.10 PM.jpeg", "WhatsApp Image 2026-09-14 at 8.00.10 PM (1).jpeg"],
 ].map(([game, first, second], index) => ({
   id: `local-poster-${index + 1}`,
   edition: String(index + 1).padStart(3, "0"),
@@ -60,6 +61,74 @@ function Picker({ label, options, value, onChange, disabledOption, testPrefix })
           );
         })}
       </div>
+    </div>
+  );
+}
+
+function PosterGallery({ poster }) {
+  const [imageIndex, setImageIndex] = useState(0);
+  const startX = useRef(null);
+  const currentImage = poster.images[imageIndex];
+
+  const showImage = (nextIndex) => {
+    setImageIndex(Math.max(0, Math.min(poster.images.length - 1, nextIndex)));
+  };
+
+  const handlePointerDown = (event) => {
+    startX.current = event.clientX;
+  };
+
+  const handlePointerUp = (event) => {
+    if (startX.current == null) return;
+    const distance = event.clientX - startX.current;
+    if (Math.abs(distance) > 40) showImage(imageIndex + (distance < 0 ? 1 : -1));
+    startX.current = null;
+  };
+
+  return (
+    <div
+      className="relative overflow-hidden border-b border-line touch-pan-y select-none"
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={() => { startX.current = null; }}
+      data-testid={`poster-gallery-${poster.id}`}
+    >
+      <img
+        src={currentImage}
+        alt={`${poster.title} ${imageIndex === 0 ? "framed poster" : "poster in a room"}`}
+        className="w-full aspect-[1/1.25] object-cover grayscale-[20%] transition-all duration-300"
+        draggable="false"
+      />
+      <button
+        type="button"
+        onClick={() => showImage(imageIndex - 1)}
+        disabled={imageIndex === 0}
+        aria-label="Show previous poster image"
+        className="absolute left-3 top-1/2 -translate-y-1/2 grid place-items-center w-9 h-9 bg-paper/90 text-ink disabled:opacity-30 disabled:cursor-not-allowed"
+      >
+        <ChevronLeft size={18} />
+      </button>
+      <button
+        type="button"
+        onClick={() => showImage(imageIndex + 1)}
+        disabled={imageIndex === poster.images.length - 1}
+        aria-label="Show next poster image"
+        className="absolute right-3 top-1/2 -translate-y-1/2 grid place-items-center w-9 h-9 bg-paper/90 text-ink disabled:opacity-30 disabled:cursor-not-allowed"
+      >
+        <ChevronRight size={18} />
+      </button>
+      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5" aria-label="Poster image position">
+        {poster.images.map((image, index) => (
+          <button
+            key={image}
+            type="button"
+            onClick={() => showImage(index)}
+            aria-label={`Show poster image ${index + 1}`}
+            className={`w-2 h-2 rounded-full border border-paper ${imageIndex === index ? "bg-paper" : "bg-paper/40"}`}
+          />
+        ))}
+      </div>
+      <RegistrationMarks className="opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
     </div>
   );
 }
@@ -193,19 +262,7 @@ export default function Shop() {
             const { size, framing } = cardSel(p.id);
             return (
               <Reveal key={p.id} delay={(i % 4) * 0.07} className="bg-paper flex flex-col group" data-testid={`poster-card-${p.id}`}>
-                <div className="relative overflow-hidden border-b border-line">
-                  <div className="grid grid-cols-2 gap-1 bg-line">
-                    {p.images.map((image, imageIndex) => (
-                      <img
-                        key={image}
-                        src={image}
-                        alt={`${p.title} ${imageIndex === 0 ? "framed poster" : "poster in a room"}`}
-                        className="w-full aspect-[1/1.25] object-cover grayscale-[20%] transition-all duration-700 group-hover:grayscale-0 group-hover:scale-[1.03]"
-                      />
-                    ))}
-                  </div>
-                  <RegistrationMarks className="opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                </div>
+                <PosterGallery poster={p} />
                 <div className="p-5 flex flex-col flex-1">
                   <p className="font-mono-press text-[10px] uppercase tracking-[0.2em] text-terra">{p.game}</p>
                   <h3 className="font-serif-press italic text-2xl text-ink mt-1 leading-tight">{p.title}</h3>

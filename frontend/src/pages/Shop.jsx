@@ -1,11 +1,36 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import api, { productImage } from "../lib/api";
+import api from "../lib/api";
 import { useCart } from "../context/CartContext";
 import { Reveal, SectionHeading, RegistrationMarks } from "../components/Motion";
 
 const SIZES = ["A4", "A3", "A5"];
 const FALLBACK = { posters: { A4: { framed: 259, unframed: 149 }, A3: { framed: 399, unframed: 179 }, A5: { unframed: 89 } } };
+const LOCAL_POSTERS = [
+  ["Forza HORIZON 5", "WhatsApp Image 2026-09-14 at 7.59.46 PM.jpeg", "WhatsApp Image 2026-09-14 at 7.59.47 PM.jpeg"],
+  ["Valorant", "WhatsApp Image 2026-09-14 at 7.59.48 PM.jpeg", "WhatsApp Image 2026-09-14 at 7.59.50 PM.jpeg"],
+  ["Elden Ring", "WhatsApp Image 2026-09-14 at 7.59.50 PM (1).jpeg", "WhatsApp Image 2026-09-14 at 7.59.50 PM (2).jpeg"],
+  ["God of War Ragnork", "WhatsApp Image 2026-09-14 at 7.59.51 PM.jpeg", "WhatsApp Image 2026-09-14 at 7.59.52 PM.jpeg"],
+  ["Forza HORIZON 5", "WhatsApp Image 2026-09-14 at 7.59.53 PM (1).jpeg", "WhatsApp Image 2026-09-14 at 7.59.53 PM (2).jpeg"],
+  ["Valorant", "WhatsApp Image 2026-09-14 at 7.59.54 PM.jpeg", "WhatsApp Image 2026-09-14 at 7.59.57 PM.jpeg"],
+  ["Ghost of Yotei", "WhatsApp Image 2026-09-14 at 7.59.57 PM (1).jpeg", "WhatsApp Image 2026-09-14 at 7.59.57 PM (2).jpeg"],
+  ["The Last of Us Part 2 Remastered", "WhatsApp Image 2026-09-14 at 7.59.59 PM.jpeg", "WhatsApp Image 2026-09-14 at 8.00.01 PM.jpeg"],
+  ["Grand Theft Auto VI", "WhatsApp Image 2026-09-14 at 8.00.01 PM (1).jpeg", "WhatsApp Image 2026-09-14 at 8.00.04 PM.jpeg"],
+  ["Elden Ring", "WhatsApp Image 2026-09-14 at 8.00.04 PM (1).jpeg", "WhatsApp Image 2026-09-14 at 8.00.05 PM.jpeg"],
+  ["The Last of Us Part 2", "WhatsApp Image 2026-09-14 at 8.00.05 PM (1).jpeg", "WhatsApp Image 2026-09-14 at 8.00.06 PM.jpeg"],
+  ["Minecraft", "WhatsApp Image 2026-09-14 at 8.00.06 PM (1).jpeg", "WhatsApp Image 2026-09-14 at 8.00.06 PM (2).jpeg"],
+  ["The Last of Us Part 2", "WhatsApp Image 2026-09-14 at 8.00.07 PM.jpeg", "WhatsApp Image 2026-09-14 at 8.00.07 PM (1).jpeg"],
+  ["Red Dead Redemption", "WhatsApp Image 2026-09-14 at 8.00.08 PM.jpeg", "WhatsApp Image 2026-09-14 at 8.00.08 PM (1).jpeg"],
+  ["Uncharted 4 : A Thiefs End", "WhatsApp Image 2026-09-14 at 8.00.08 PM (2).jpeg", "WhatsApp Image 2026-09-14 at 8.00.09 PM.jpeg"],
+  ["Cyberpunk 2077", "WhatsApp Image 2026-09-14 at 8.00.09 PM (1).jpeg", "WhatsApp Image 2026-09-14 at 8.00.09 PM (2).jpeg"],
+  ["Resident Evil Requiem", "WhatsApp Image 2026-09-14 at 8.00.10 PM.jpeg", "WhatsApp Image 2026-09-14 at 8.00.10 PM (1).jpeg"],
+].map(([game, first, second], index) => ({
+  id: `local-poster-${index + 1}`,
+  edition: String(index + 1).padStart(3, "0"),
+  title: game,
+  game,
+  images: [`/images/${first}`, `/images/${second}`],
+}));
 
 function priceFor(pricing, size, framing) {
   const t = pricing?.posters?.[size];
@@ -63,12 +88,12 @@ export default function Shop() {
   }, [posters, pricing, query, sort]);
 
   useEffect(() => {
-    Promise.all([api.get("/products/posters"), api.get("/pricing")])
-      .then(([p, pr]) => {
-        setPosters(p.data);
-        setPricing(pr.data);
+    api.get("/pricing")
+      .then(({ data }) => {
+        setPosters(LOCAL_POSTERS);
+        setPricing(data);
         const s = {};
-        p.data.forEach((x) => { s[x.id] = { size: "A4", framing: "unframed" }; });
+        LOCAL_POSTERS.forEach((x) => { s[x.id] = { size: "A4", framing: "unframed" }; });
         setSel(s);
       })
       .catch(() => toast.error("Could not load the catalogue"))
@@ -169,11 +194,16 @@ export default function Shop() {
             return (
               <Reveal key={p.id} delay={(i % 4) * 0.07} className="bg-paper flex flex-col group" data-testid={`poster-card-${p.id}`}>
                 <div className="relative overflow-hidden border-b border-line">
-                  <img
-                    src={productImage(p)}
-                    alt={p.title}
-                    className="w-full aspect-[1/1.25] object-cover grayscale-[35%] transition-all duration-700 group-hover:grayscale-0 group-hover:scale-[1.03]"
-                  />
+                  <div className="grid grid-cols-2 gap-1 bg-line">
+                    {p.images.map((image, imageIndex) => (
+                      <img
+                        key={image}
+                        src={image}
+                        alt={`${p.title} ${imageIndex === 0 ? "framed poster" : "poster in a room"}`}
+                        className="w-full aspect-[1/1.25] object-cover grayscale-[20%] transition-all duration-700 group-hover:grayscale-0 group-hover:scale-[1.03]"
+                      />
+                    ))}
+                  </div>
                   <RegistrationMarks className="opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 </div>
                 <div className="p-5 flex flex-col flex-1">

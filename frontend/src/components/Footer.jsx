@@ -8,6 +8,7 @@ export default function Footer() {
       <div className="mx-auto max-w-7xl px-5 md:px-8 py-16 grid grid-cols-1 md:grid-cols-12 gap-12">
         <div className="md:col-span-6">
           <img src="/brand/logo-new.png" alt="Physicality" className="h-24 sm:h-32 w-auto max-w-[8rem] object-contain object-left" />
+          <p className="mt-3 font-mono-press text-[10px] uppercase tracking-[0.2em] text-ink">Make Digital Tangible</p>
           <p className="mt-4 text-sm text-smoke leading-relaxed max-w-xs">
             Studio-crafted posters and physical cover boxes for the games you love.
             In an all-digital world, we keep the collection alive.

@@ -29,6 +29,14 @@ export default function Nav() {
           </span>
         </Link>
 
+        <Link
+          to="/"
+          className="absolute left-1/2 -translate-x-1/2 font-display-press text-base sm:text-lg uppercase tracking-[0.18em] text-ink whitespace-nowrap"
+          aria-label="Physicality home"
+        >
+          Physicality
+        </Link>
+
         <nav className="hidden lg:flex items-center gap-4 xl:gap-6">
           {LINKS.map((l) => (
             <Link key={l.to} to={l.to} className={linkCls} data-testid={`nav-${l.label.toLowerCase().replace(/\s+/g, "-")}`}>

@@ -7,7 +7,6 @@ import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
-import AuthCallback from "@/components/AuthCallback";
 import Home from "@/pages/Home";
 import Shop from "@/pages/Shop";
 import CustomPoster from "@/pages/CustomPoster";
@@ -17,6 +16,9 @@ import Auth from "@/pages/Auth";
 import Account from "@/pages/Account";
 import Admin from "@/pages/Admin";
 import TrackOrder from "@/pages/TrackOrder";
+import OurStory from "@/pages/OurStory";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import Terms from "@/pages/Terms";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -39,24 +41,17 @@ function AppShell() {
           <Route path="/cover-art" element={<CoverArt />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/auth" element={<Auth />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/track-order" element={<TrackOrder />} />
           <Route path="/account" element={<Account />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/our-story" element={<OurStory />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<Terms />} />
         </Routes>
       </main>
       <Footer />
     </>
   );
-}
-
-function AppRouter() {
-  const location = useLocation();
-  // OAuth callback: detect session_id synchronously during render (not in useEffect)
-  if (location.hash?.includes("session_id=")) {
-    return <AuthCallback />;
-  }
-  return <AppShell />;
 }
 
 function App() {
@@ -79,7 +74,7 @@ function App() {
       <AuthProvider>
         <CartProvider>
           <BrowserRouter>
-            <AppRouter />
+            <AppShell />
           </BrowserRouter>
           <Toaster
             position="bottom-right"

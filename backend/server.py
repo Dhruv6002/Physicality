@@ -8,7 +8,6 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Annotated, List, Optional
-import asyncio
 import ipaddress
 import re
 from html import escape
@@ -18,6 +17,8 @@ from urllib.parse import urlparse
 import bcrypt
 import httpx
 import jwt
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 import requests as http_requests
 from bson import ObjectId
 from fastapi import (APIRouter, Depends, FastAPI, File, Header, HTTPException,
@@ -50,25 +51,32 @@ app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
 JWT_ALGORITHM = "HS256"
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
 PROMO_CODE = "FREEHOSTEL5050"
-POSTER_PRICES = {
-    "A4": {"framed": 259, "unframed": 149},
-    "A3": {"framed": 399, "unframed": 179},
-    "A5": {"unframed": 89},
-}
-COVER_PRICE = 199
-PLATFORMS = ["PlayStation 5", "PlayStation 4", "Xbox", "PC"]
-ORDER_STATUSES = ["placed", "packed", "shipped", "delivered"]
-
-UPLOAD_DIR = Path(__file__).parent / "uploads"
-UPLOAD_DIR.mkdir(exist_ok=True)
-
-# ---------- Object storage (Emergent) with local-disk fallback ----------
-STORAGE_BASE = (os.environ.get("INTEGRATION_PROXY_URL") or "").strip() or "https://integrations.emergentagent.com"
-STORAGE_URL = STORAGE_BASE.rstrip("/") + "/objstore/api/v1/storage"
-EMERGENT_KEY = os.environ.get("EMERGENT_LLM_KEY")
-APP_NAME = "physical-editions"
-storage_key = None
+LOCAL_POSTER_SEED = [
+    ("Forza HORIZON 5", "WhatsApp Image 2026-09-14 at 7.59.46 PM.jpeg"),
+    ("Valorant", "WhatsApp Image 2026-09-14 at 7.59.48 PM.jpeg"),
+    ("Elden Ring", "WhatsApp Image 2026-09-14 at 7.59.50 PM (1).jpeg"),
+    ("God of War Ragnork", "WhatsApp Image 2026-09-14 at 7.59.51 PM.jpeg"),
+    ("Resident Evil Requiem", "WhatsApp Image 2026-09-14 at 7.59.53 PM (1).jpeg"),
+    ("Forza HORIZON 5", "WhatsApp Image 2026-09-14 at 7.59.54 PM.jpeg"),
+    ("Valorant", "WhatsApp Image 2026-09-14 at 7.59.57 PM (1).jpeg"),
+    ("The Ghost of Yotei", "WhatsApp Image 2026-09-14 at 7.59.59 PM.jpeg"),
+    ("The Last of Us Part 2 Remastered", "WhatsApp Image 2026-09-14 at 8.00.01 PM (1).jpeg"),
+    ("Grand Theft Auto VI", "WhatsApp Image 2026-09-14 at 8.00.04 PM (1).jpeg"),
+    ("Elden Ring", "WhatsApp Image 2026-09-14 at 8.00.05 PM (1).jpeg"),
+    ("The Last of Us Part 2", "WhatsApp Image 2026-09-14 at 8.00.06 PM (1).jpeg"),
+    ("Minecraft", "WhatsApp Image 2026-09-14 at 8.00.07 PM.jpeg"),
+    ("The Last of Us Part 2", "WhatsApp Image 2026-09-14 at 8.00.08 PM.jpeg"),
+    ("Red Dead Redemption", "WhatsApp Image 2026-09-14 at 8.00.08 PM (2).jpeg"),
+    ("Uncharted 4 : A Thiefs End", "WhatsApp Image 2026-09-14 at 8.00.09 PM (1).jpeg"),
+    ("Cyberpunk 2077", "WhatsApp Image 2026-09-14 at 8.00.10 PM.jpeg"),
+    ("God of War", "WhatsApp Image 2026-09-19 at 3.50.10 PM.jpeg"),
+    ("Counter-Strike 2", "WhatsApp Image 2026-09-19 at 3.50.12 PM.jpeg"),
+    ("007 First Light", "WhatsApp Image 2026-09-19 at 3.50.11 PM (1).jpeg"),
+    ("Uncharted 4: A Thief's End", "WhatsApp Image 2026-09-19 at 3.50.12 PM (2).jpeg"),
+    ("The Last of Us Part 2", "WhatsApp Image 2026-09-19 at 4.15.37 PM.jpeg"),
+]
 storage_enabled = False
 
 MIME_TYPES = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp"}
@@ -78,6 +86,9 @@ def init_storage(force: bool = False):
     global storage_key, storage_enabled
     if storage_key and not force:
         return storage_key
+    if not EMERGENT_KEY:
+        storage_enabled = False
+        return None
     resp = http_requests.post(f"{STORAGE_URL}/init", json={"emergent_key": EMERGENT_KEY}, timeout=30)
     resp.raise_for_status()
     storage_key = resp.json()["storage_key"]
@@ -213,9 +224,10 @@ def status_email_html(order: dict, new_status: str) -> str:
         for i in order.get("items", []))
     tracking = ""
     if new_status in ("shipped", "delivered") and not order.get("promo_applied") and order.get("tracking_id"):
-        courier = f' &mdash; {escape(order["courier"])}' if order.get("courier") else ""
+        delivery_option = f' <span style="color:#5C5A56">Delivery option &middot; {escape(order["delivery_option"])}</span>' if order.get("delivery_option") else ""
+        courier = f' &mdash; {escape(order["courier"]) }' if order.get("courier") else ""
         tracking = (f'<p style="font-family:Arial,sans-serif;font-size:13px;color:#1C1C1A;margin:20px 0 0">'
-                    f'Tracking &middot; <strong>{escape(order["tracking_id"])}</strong>{courier}</p>')
+                    f'Tracking &middot; <strong>{escape(order["tracking_id"])}</strong>{courier}{delivery_option}</p>')
     name = escape(order.get("shipping", {}).get("name", "collector").split(" ")[0])
     return (
         '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#EAE4D9;padding:32px 16px">'
@@ -450,92 +462,104 @@ async def refresh_token(request: Request, response: Response):
     access = create_access_token(str(user["_id"]), user["email"])
     response.set_cookie("access_token", access, httponly=True, secure=True, samesite="none", max_age=43200, path="/")
     return {"token": access}
+class GoogleLoginIn(BaseModel):
+    credential: str
 
 
-@api_router.post("/auth/google/session")
-async def google_session(body: dict, response: Response):
-    session_id = body.get("session_id")
-    if not session_id:
-        raise HTTPException(status_code=400, detail="Missing session_id")
+@api_router.get("/auth/google/config")
+async def google_config():
+    return {"configured": bool(GOOGLE_CLIENT_ID), "client_id": GOOGLE_CLIENT_ID or None}
 
-    resp = None
-    for attempt in (1, 2):
-        try:
-            async with httpx.AsyncClient(timeout=30) as http_client:
-                resp = await http_client.get(
-                    "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
-                    headers={"X-Session-ID": session_id},
-                )
-        except Exception:
-            raise HTTPException(
-                status_code=502,
-                detail="Could not reach the sign-in service",
-            )
 
-        # 404 here means "user_data_not_found or expired"; retry once
-        # for propagation lag.
-        if resp.status_code == 404 and attempt == 1:
-            await asyncio.sleep(1.5)
-            continue
-        break
-
-    if resp is None:
+@api_router.post("/auth/google")
+async def google_login(body: GoogleLoginIn, response: Response):
+    if not GOOGLE_CLIENT_ID:
         raise HTTPException(
-            status_code=502,
-            detail="Could not reach the sign-in service",
+            status_code=500,
+            detail="Google authentication is not configured"
         )
-    if resp.status_code == 404:
+
+    try:
+        google_user = id_token.verify_oauth2_token(
+            body.credential,
+            google_requests.Request(),
+            GOOGLE_CLIENT_ID
+        )
+    except ValueError:
         raise HTTPException(
             status_code=401,
-            detail="That sign-in link expired or was already used. Try again.",
-        )
-    if resp.status_code != 200:
-        raise HTTPException(
-            status_code=401,
-            detail="Google sign-in could not be verified",
+            detail="Invalid Google credential"
         )
 
-    data = resp.json()
-    email = data["email"].strip().lower()
-    user = await db.users.find_one({"email": email})
+    email = google_user.get("email")
+    google_id = google_user.get("sub")
+    if not email or not google_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Google account information is incomplete"
+        )
+
+    email = email.strip().lower()
+    name = google_user.get("name") or email.split("@")[0]
+    picture = google_user.get("picture")
+
+    if not google_user.get("email_verified"):
+        raise HTTPException(
+            status_code=400,
+            detail="Google email is not verified"
+        )
+
+    user = await db.users.find_one({"google_id": google_id})
+
+    if not user:
+        user = await db.users.find_one({"email": email.lower()})
+
     if user:
         await db.users.update_one(
             {"_id": user["_id"]},
-            {"$set": {"google_id": data.get("id"), "picture": data.get("picture")}},
+            {
+                "$set": {
+                    "google_id": google_id,
+                    "picture": picture,
+                    "name": name
+                }
+            }
         )
+
         user = await db.users.find_one({"_id": user["_id"]})
+
     else:
         result = await db.users.insert_one({
-            "email": email,
-            "name": data.get("name") or email.split("@")[0],
+            "email": email.lower(),
+            "name": name,
             "role": "customer",
             "password_hash": None,
-            "google_id": data.get("id"),
-            "picture": data.get("picture"),
-            "created_at": datetime.now(timezone.utc),
+            "google_id": google_id,
+            "picture": picture,
+            "created_at": datetime.now(timezone.utc)
         })
+
         user = await db.users.find_one({"_id": result.inserted_id})
 
-    await db.user_sessions.insert_one({
-        "user_id": str(user["_id"]),
-        "session_token": data["session_token"],
-        "expires_at": datetime.now(timezone.utc) + timedelta(days=7),
-        "created_at": datetime.now(timezone.utc),
-    })
-    access = create_access_token(str(user["_id"]), email)
-    refresh = create_refresh_token(str(user["_id"]))
-    set_auth_cookies(response, access, refresh)
-    response.set_cookie(
-        "session_token",
-        data["session_token"],
-        httponly=True,
-        secure=True,
-        samesite="none",
-        max_age=604800,
-        path="/",
+    access = create_access_token(
+        str(user["_id"]),
+        user["email"]
     )
-    return {"user": public_user(user), "token": access}
 
+    refresh = create_refresh_token(
+        str(user["_id"])
+    )
+
+    set_auth_cookies(
+        response,
+        access,
+        refresh
+    )
+
+    return {
+        "user": public_user(user),
+        "token": access
+    }
 
 @api_router.post("/auth/forgot-password")
 async def forgot_password(body: dict):
@@ -554,6 +578,8 @@ async def forgot_password(body: dict):
 async def reset_password(body: dict):
     token = body.get("token") or ""
     new_password = body.get("password") or ""
+    if len(new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
     record = await db.password_reset_tokens.find_one({"token": token, "used": False})
     if not record or record["expires_at"] < datetime.now(timezone.utc):
         raise HTTPException(status_code=400, detail="Reset link is invalid or expired")
@@ -586,7 +612,7 @@ POSTER_SEED = [
 
 @api_router.get("/products/posters")
 async def list_posters():
-    docs = await db.products.find({"kind": "poster"}).sort("edition", 1).to_list(100)
+    docs = await db.products.find({"kind": "poster", "catalog_source": "local"}).sort("edition", 1).to_list(100)
     return [Product.from_mongo(d).model_dump() for d in docs]
 
 
@@ -689,13 +715,13 @@ def order_response(doc: dict, include_tracking: bool = True) -> dict:
         "promo_applied": doc.get("promo_applied", False), "status": doc["status"],
         "payment_status": doc["payment_status"], "payment_id": doc.get("payment_id"),
         "shipping": doc.get("shipping"), "user_email": doc.get("user_email"),
-        "status_history": doc.get("status_history", []),
+        "delivery_option": doc.get("delivery_option"), "status_history": doc.get("status_history", []),
         "created_at": doc["created_at"].isoformat() if isinstance(doc.get("created_at"), datetime) else doc.get("created_at"),
     }
     if include_tracking:
         out["tracking_id"] = doc.get("tracking_id")
         out["courier"] = doc.get("courier")
-        out["tracking_url"] = tracking_url(doc.get("tracking_id"), doc.get("courier"))
+        out["tracking_url"] = doc.get("tracking_url") or tracking_url(doc.get("tracking_id"), doc.get("courier"))
     return out
 
 
@@ -769,7 +795,7 @@ async def create_order(body: OrderCreate, user: dict = Depends(get_current_user)
         "items": line_items, "subtotal": subtotal, "discount": discount, "total": total,
         "promo_applied": promo_applied, "status": "placed", "payment_status": "pending",
         "payment_id": None, "razorpay_order_id": None, "tracking_id": None, "courier": None,
-        "shipping": body.shipping.model_dump(), "created_at": now,
+        "delivery_option": None, "shipping": body.shipping.model_dump(), "created_at": now,
         "status_history": [{"status": "placed", "at": now.isoformat()}],
     }
     result = await db.orders.insert_one(doc)
@@ -789,7 +815,7 @@ async def track_order(order_no: str = Query(..., min_length=3), email: str = Que
     if not order:
         raise HTTPException(status_code=404, detail="We could not find an order with those details")
     response = order_response(order, include_tracking=not order.get("promo_applied", False))
-    return {key: response[key] for key in ("order_no", "status", "status_history", "tracking_id", "courier", "tracking_url", "created_at") if key in response}
+    return {key: response[key] for key in ("order_no", "status", "status_history", "delivery_option", "tracking_id", "courier", "tracking_url", "created_at") if key in response}
 
 
 # ---------- Payments (Razorpay) ----------
@@ -801,10 +827,19 @@ def razorpay_client():
     return razorpay.Client(auth=(key, secret))
 
 
+def mock_payments_enabled() -> bool:
+    return os.environ.get("ALLOW_MOCK_PAYMENTS", "").strip().lower() in {"1", "true", "yes"}
+
+
 @api_router.get("/payments/config")
 async def payments_config():
     key = os.environ.get("RAZORPAY_KEY_ID", "").strip()
-    return {"configured": bool(razorpay_client()), "key_id": key or None}
+    configured = bool(razorpay_client())
+    return {
+        "configured": configured,
+        "mock_enabled": not configured and mock_payments_enabled(),
+        "key_id": key or None,
+    }
 
 
 async def get_payable_order(order_id: str, user: dict) -> dict:
@@ -839,9 +874,12 @@ async def verify_payment(body: dict, user: dict = Depends(get_current_user)):
     if not rz:
         raise HTTPException(status_code=503, detail="Payment gateway is not configured yet")
     order = await get_payable_order(body.get("order_id", ""), user)
+    razorpay_order_id = body.get("razorpay_order_id", "")
+    if not order.get("razorpay_order_id") or razorpay_order_id != order["razorpay_order_id"]:
+        raise HTTPException(status_code=400, detail="Payment order does not match this order")
     try:
         rz.utility.verify_payment_signature({
-            "razorpay_order_id": body.get("razorpay_order_id", ""),
+            "razorpay_order_id": razorpay_order_id,
             "razorpay_payment_id": body.get("razorpay_payment_id", ""),
             "razorpay_signature": body.get("razorpay_signature", ""),
         })
@@ -857,6 +895,8 @@ async def verify_payment(body: dict, user: dict = Depends(get_current_user)):
 async def mock_pay(body: dict, user: dict = Depends(get_current_user)):
     if razorpay_client():
         raise HTTPException(status_code=400, detail="Gateway is live — use the real checkout")
+    if not mock_payments_enabled():
+        raise HTTPException(status_code=503, detail="Mock payments are disabled")
     order = await get_payable_order(body.get("order_id", ""), user)
     payment_id = f"MOCKPAY-{uuid.uuid4().hex[:10].upper()}"
     await db.orders.update_one({"_id": order["_id"]},
@@ -869,6 +909,8 @@ class AdminOrderUpdate(BaseModel):
     status: Optional[str] = None
     tracking_id: Optional[str] = None
     courier: Optional[str] = None
+    delivery_option: Optional[str] = None
+    tracking_url: Optional[str] = None
 
 
 @api_router.get("/admin/orders")
@@ -886,11 +928,20 @@ async def admin_update_order(order_id: str, body: AdminOrderUpdate, admin: dict 
     if body.status:
         if body.status not in ORDER_STATUSES:
             raise HTTPException(status_code=400, detail="Invalid status")
+        if body.status in ("shipped", "delivered") and order.get("payment_status") != "paid":
+            raise HTTPException(status_code=400, detail="Only paid orders can be marked shipped or delivered")
         updates["status"] = body.status
     if body.tracking_id is not None:
         updates["tracking_id"] = body.tracking_id.strip() or None
     if body.courier is not None:
         updates["courier"] = body.courier.strip() or None
+    if body.delivery_option is not None:
+        updates["delivery_option"] = body.delivery_option.strip() or None
+    if body.tracking_url is not None:
+        partner_url = body.tracking_url.strip() or None
+        if partner_url and urlparse(partner_url).scheme not in ("http", "https"):
+            raise HTTPException(status_code=400, detail="Partner tracking link must start with http:// or https://")
+        updates["tracking_url"] = partner_url
     if not updates:
         return order_response(order)
     push = None
@@ -962,9 +1013,13 @@ async def root():
 
 app.include_router(api_router)
 
-frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+frontend_origins = {
+    origin.strip().rstrip("/")
+    for origin in os.environ.get("FRONTEND_URL", "http://localhost:3000").split(",")
+    if origin.strip()
+}
 allowed_origins = {
-    frontend_url,
+    *frontend_origins,
     "https://www.physicality.in",
     "https://physicality.in",
     "http://localhost:3000",
@@ -998,15 +1053,31 @@ async def seed_admin():
 
 
 async def seed_products():
-    if await db.products.count_documents({"kind": "poster"}) == 0:
-        for p in POSTER_SEED:
-            await db.products.insert_one(Product(kind="poster", prices=POSTER_PRICES, **p).to_mongo())
-        logger.info(f"Seeded {len(POSTER_SEED)} poster prints")
+    for index, (game, image_name) in enumerate(LOCAL_POSTER_SEED, start=1):
+        edition = str(index).zfill(3)
+        await db.products.update_one(
+            {"catalog_key": f"local-poster-{edition}"},
+            {"$set": {
+                "kind": "poster",
+                "title": game,
+                "game": game,
+                "edition": edition,
+                "blurb": "",
+                "image_url": f"/images/{image_name}",
+                "image_path": None,
+                "prices": POSTER_PRICES,
+                "catalog_source": "local",
+                "catalog_key": f"local-poster-{edition}",
+            }},
+            upsert=True,
+        )
+    logger.info(f"Upserted {len(LOCAL_POSTER_SEED)} local poster products")
 
 
 @app.on_event("startup")
 async def startup():
     await db.users.create_index("email", unique=True)
+    await db.products.create_index("catalog_key", unique=True, sparse=True)
     await db.password_reset_tokens.create_index("expires_at", expireAfterSeconds=0)
     await db.login_attempts.create_index("identifier")
     await db.orders.create_index("user_id")
@@ -1014,10 +1085,12 @@ async def startup():
     await seed_admin()
     await seed_products()
     try:
-        init_storage()
-        logger.info("Object storage initialized")
+        if init_storage():
+            logger.info("Object storage initialized")
+        else:
+            logger.warning("EMERGENT_LLM_KEY is not configured; using durable MongoDB upload fallback")
     except Exception as e:
-        logger.error(f"Object storage init failed, using local disk fallback: {e}")
+        logger.warning(f"Object storage unavailable; using durable MongoDB upload fallback: {e}")
 
 
 @app.on_event("shutdown")

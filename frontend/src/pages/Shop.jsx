@@ -26,8 +26,12 @@ const LOCAL_POSTERS = [
   ["Red Dead Redemption", "WhatsApp Image 2026-09-14 at 8.00.08 PM (2).jpeg", "WhatsApp Image 2026-09-14 at 8.00.09 PM.jpeg"],
   ["Uncharted 4 : A Thiefs End", "WhatsApp Image 2026-09-14 at 8.00.09 PM (1).jpeg", "WhatsApp Image 2026-09-14 at 8.00.09 PM (2).jpeg"],
   ["Cyberpunk 2077", "WhatsApp Image 2026-09-14 at 8.00.10 PM.jpeg", "WhatsApp Image 2026-09-14 at 8.00.10 PM (1).jpeg"],
+  ["God of War", "WhatsApp Image 2026-09-19 at 3.50.10 PM.jpeg", "WhatsApp Image 2026-09-19 at 3.50.09 PM.jpeg"],
+  ["Counter-Strike 2", "WhatsApp Image 2026-09-19 at 3.50.12 PM.jpeg", "WhatsApp Image 2026-09-19 at 3.50.10 PM (2).jpeg"],
+  ["007 First Light", "WhatsApp Image 2026-09-19 at 3.50.11 PM (1).jpeg", "WhatsApp Image 2026-09-19 at 3.50.12 PM (1).jpeg"],
+  ["Uncharted 4: A Thief's End", "WhatsApp Image 2026-09-19 at 3.50.12 PM (2).jpeg", "WhatsApp Image 2026-09-19 at 3.50.13 PM.jpeg"],
+  ["The Last of Us Part 2", "WhatsApp Image 2026-09-19 at 4.15.37 PM.jpeg", "WhatsApp Image 2026-09-19 at 3.50.10 PM (1).jpeg"],
 ].map(([game, first, second], index) => ({
-  id: `local-poster-${index + 1}`,
   edition: String(index + 1).padStart(3, "0"),
   title: game,
   game,
@@ -70,41 +74,62 @@ function PosterGallery({ poster }) {
   const [imageIndex, setImageIndex] = useState(0);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const startX = useRef(null);
+  const didSwipe = useRef(false);
   const currentImage = poster.images[imageIndex];
+
+  useEffect(() => {
+    poster.images.forEach((image) => {
+      const preload = new Image();
+      preload.src = image;
+    });
+  }, [poster.images]);
 
   const showImage = (nextIndex) => {
     setImageIndex(Math.max(0, Math.min(poster.images.length - 1, nextIndex)));
   };
 
   const handlePointerDown = (event) => {
+    event.currentTarget.setPointerCapture?.(event.pointerId);
     startX.current = event.clientX;
+    didSwipe.current = false;
   };
 
-  const handlePointerUp = (event) => {
+  const handlePointerMove = (event) => {
     if (startX.current == null) return;
     const distance = event.clientX - startX.current;
-    if (Math.abs(distance) > 40) showImage(imageIndex + (distance < 0 ? 1 : -1));
+    if (Math.abs(distance) > 24) {
+      didSwipe.current = true;
+      showImage(imageIndex + (distance < 0 ? 1 : -1));
+      startX.current = null;
+    }
+  };
+
+  const handlePointerUp = () => {
     startX.current = null;
   };
 
   return (
     <div
       className="relative overflow-hidden border-b border-line touch-pan-y select-none"
-      onPointerDown={handlePointerDown}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={() => { startX.current = null; }}
       data-testid={`poster-gallery-${poster.id}`}
     >
       <button
         type="button"
-        onClick={() => setIsViewerOpen(true)}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={() => { startX.current = null; }}
+        onClick={() => {
+          if (!didSwipe.current) setIsViewerOpen(true);
+          didSwipe.current = false;
+        }}
         aria-label={`View ${poster.title} image at full size`}
         className="block w-full bg-paper2 cursor-zoom-in"
       >
         <img
           src={currentImage}
           alt={`${poster.title} ${imageIndex === 0 ? "framed poster" : "poster in a room"}`}
-          className="w-full aspect-[1/1.25] object-contain grayscale-[20%] transition-all duration-300"
+          className="w-full aspect-[1/1.25] object-contain grayscale-[20%]"
           draggable="false"
         />
       </button>
@@ -176,12 +201,20 @@ export default function Shop() {
   }, [posters, pricing, query, sort]);
 
   useEffect(() => {
-    api.get("/pricing")
-      .then(({ data }) => {
-        setPosters(LOCAL_POSTERS);
-        setPricing(data);
+    Promise.all([api.get("/products/posters"), api.get("/pricing")])
+      .then(([{ data: products }, { data: pricingData }]) => {
+        const productsByEdition = new Map(products.map((product) => [product.edition, product]));
+        const catalog = LOCAL_POSTERS.map((poster) => {
+          const product = productsByEdition.get(poster.edition);
+          if (!product?.id || !/^[0-9a-f]{24}$/i.test(product.id)) {
+            throw new Error(`Poster ${poster.edition} is missing its MongoDB product ID`);
+          }
+          return { ...poster, id: product.id };
+        });
+        setPosters(catalog);
+        setPricing(pricingData);
         const s = {};
-        LOCAL_POSTERS.forEach((x) => { s[x.id] = { size: "A4", framing: "unframed" }; });
+        catalog.forEach((x) => { s[x.id] = { size: "A4", framing: "unframed" }; });
         setSel(s);
       })
       .catch(() => toast.error("Could not load the catalogue"))
@@ -198,7 +231,7 @@ export default function Shop() {
 
   const addCatalog = (p) => {
     const { size, framing } = cardSel(p.id);
-    addItem({ kind: "poster", product_id: p.id, title: p.title, game: p.game, size, framing, unit_price: priceFor(pricing, size, framing), qty: 1, image_url: p.image_url, image_path: p.image_path });
+    addItem({ kind: "poster", product_id: p.id, title: p.title, game: p.game, size, framing, unit_price: priceFor(pricing, size, framing), qty: 1, image_url: p.image_url || p.images?.[0], image_path: p.image_path });
     toast.success(`${p.title} · ${size} ${framing} — added to your cart`);
   };
 

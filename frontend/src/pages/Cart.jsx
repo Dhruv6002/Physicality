@@ -6,14 +6,16 @@ import api, { fileUrl, formatApiError } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { Reveal, SectionHeading } from "../components/Motion";
+import { Dialog, DialogContent, DialogTitle } from "../components/ui/dialog";
 
 const loadRazorpay = () =>
   new Promise((resolve) => {
     if (window.Razorpay) return resolve(true);
     const s = document.createElement("script");
+    const timeout = window.setTimeout(() => resolve(false), 10000);
     s.src = "https://checkout.razorpay.com/v1/checkout.js";
-    s.onload = () => resolve(true);
-    s.onerror = () => resolve(false);
+    s.onload = () => { window.clearTimeout(timeout); resolve(true); };
+    s.onerror = () => { window.clearTimeout(timeout); resolve(false); };
     document.body.appendChild(s);
   });
 
@@ -22,6 +24,7 @@ export default function Cart() {
   const { items, removeItem, setQty, clear, promo, setPromo, totals } = useCart();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
+  const [preview, setPreview] = useState(null);
   const [shipping, setShipping] = useState({ name: "", phone: "", address: "", city: "", state: "", pincode: "" });
 
   const setField = (k) => (e) => setShipping((s) => ({ ...s, [k]: e.target.value }));
@@ -34,9 +37,27 @@ export default function Cart() {
     }
     setBusy(true);
     try {
+      const legacyPosterIds = [...new Set(items
+        .map((item) => item.product_id?.match(/^local-poster-(\d+)$/))
+        .filter(Boolean)
+        .map((match) => match[1]))];
+      const resolvedLegacyIds = new Map();
+      if (legacyPosterIds.length) {
+        const { data: posters } = await api.get("/products/posters");
+        for (const poster of posters) {
+          resolvedLegacyIds.set(Number(poster.edition), poster.id);
+        }
+        if (legacyPosterIds.some((edition) => !/^[0-9a-f]{24}$/i.test(resolvedLegacyIds.get(Number(edition)) || ""))) {
+          throw new Error("A saved poster is no longer available. Refresh the shop and try again.");
+        }
+      }
       const payload = {
         items: items.map((i) => ({
-          kind: i.kind, product_id: i.product_id, size: i.size, framing: i.framing, platform: i.platform,
+          kind: i.kind,
+          product_id: i.product_id?.startsWith("local-poster-")
+            ? resolvedLegacyIds.get(Number(i.product_id.slice("local-poster-".length)))
+            : i.product_id,
+          size: i.size, framing: i.framing, platform: i.platform,
           game_name: (i.kind === "cover" || (i.kind === "poster" && !i.product_id)) ? i.game : undefined,
           image_path: i.image_path, qty: i.qty,
         })),
@@ -50,7 +71,7 @@ export default function Cart() {
           const { data: rz } = await api.post("/payments/razorpay-order", { order_id: order.id });
           const ok = await loadRazorpay();
           if (!ok) {
-            throw new Error("Could not load the payment gateway — falling back to local mock checkout");
+            throw new Error("Could not load Razorpay checkout. Check your browser connection or disable an extension blocking checkout. No payment was taken.");
           }
           const rzp = new window.Razorpay({
             key: rz.key_id,
@@ -80,6 +101,9 @@ export default function Cart() {
         }
       }
 
+      if (!cfg.mock_enabled) {
+        throw new Error("Razorpay checkout is not configured. Please try again later.");
+      }
       await api.post("/payments/mock-pay", { order_id: order.id });
       clear();
       navigate(`/account?placed=${order.order_no}`);
@@ -108,9 +132,13 @@ export default function Cart() {
                 <div key={i.key} className={`flex gap-5 p-5 ${idx > 0 ? "border-t border-line" : ""}`} data-testid={`cart-item-${idx}`}>
                   <div className="w-20 shrink-0 border border-line bg-paper2 overflow-hidden">
                     {i.image_url ? (
-                      <img src={i.image_url} alt={i.title} className="w-full aspect-[1/1.25] object-cover" />
+                      <button type="button" onClick={() => setPreview({ src: i.image_url, title: i.title })} className="block w-full cursor-zoom-in" aria-label={`Preview ${i.title}`}>
+                        <img src={i.image_url} alt={i.title} className="w-full aspect-[1/1.25] object-cover" />
+                      </button>
                     ) : i.image_path ? (
-                      <img src={fileUrl(i.image_path)} alt={i.title} className="w-full aspect-[1/1.25] object-cover" />
+                      <button type="button" onClick={() => setPreview({ src: fileUrl(i.image_path), title: i.title })} className="block w-full cursor-zoom-in" aria-label={`Preview ${i.title}`}>
+                        <img src={fileUrl(i.image_path)} alt={i.title} className="w-full aspect-[1/1.25] object-cover" />
+                      </button>
                     ) : (
                       <div className="w-full aspect-[1/1.25] flex items-center justify-center font-mono-press text-[10px] text-smoke uppercase tracking-widest p-2 text-center">
                         DVD box
@@ -146,6 +174,13 @@ export default function Cart() {
                 </div>
               ))}
             </div>
+
+            <Dialog open={Boolean(preview)} onOpenChange={(open) => { if (!open) setPreview(null); }}>
+              <DialogContent className="w-[calc(100vw-2rem)] max-w-xl border-ink bg-ink p-3 sm:p-4">
+                <DialogTitle className="sr-only">{preview?.title} full-size image</DialogTitle>
+                {preview && <img src={preview.src} alt={`${preview.title} full-size`} className="max-h-[70vh] w-full object-contain" />}
+              </DialogContent>
+            </Dialog>
 
             <div className="mt-8 border border-line p-6">
               <p className="font-mono-press text-xs uppercase tracking-[0.2em] text-ink mb-4">Deliver to</p>
@@ -195,6 +230,9 @@ export default function Cart() {
                 <div className="flex justify-between text-lg border-t border-ink pt-4"><span>Total</span><span data-testid="summary-total">₹{totals.total}</span></div>
               </div>
 
+              <p className="mt-6 font-mono-press text-[10px] uppercase tracking-[0.12em] text-smoke leading-relaxed">
+                By placing your order, you agree to our <Link to="/terms" className="text-ink link-underline">Terms & Conditions</Link> and <Link to="/privacy-policy" className="text-ink link-underline">Privacy Policy</Link>.
+              </p>
               <button
                 onClick={placeOrder}
                 disabled={busy}

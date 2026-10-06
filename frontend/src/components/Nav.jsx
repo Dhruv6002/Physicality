@@ -22,22 +22,23 @@ export default function Nav() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-paper border-b border-ink" data-testid="main-nav">
-      <div className="mx-auto max-w-7xl px-5 md:px-8 h-16 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-3" data-testid="nav-brand-link">
+      <div className="mx-auto max-w-7xl px-5 md:px-8 min-h-16 py-2 grid grid-cols-[auto_1fr_auto] items-center gap-4 lg:gap-6">
+        <Link to="/" className="flex items-center gap-3 min-w-0" data-testid="nav-brand-link">
           <span className="h-10 w-8 sm:h-11 sm:w-9 overflow-hidden shrink-0" aria-hidden="true">
             <img src="/brand/logo-new.png" alt="Physicality" className="h-full w-full object-contain object-center" />
           </span>
+          <span className="hidden lg:inline font-display-press text-base uppercase tracking-[0.14em] text-ink whitespace-nowrap">Physicality</span>
         </Link>
 
         <Link
           to="/"
-          className="absolute left-1/2 -translate-x-1/2 font-display-press text-base sm:text-lg uppercase tracking-[0.18em] text-ink whitespace-nowrap"
+          className="lg:hidden absolute left-1/2 -translate-x-1/2 font-display-press text-base sm:text-lg uppercase tracking-[0.14em] text-ink whitespace-nowrap"
           aria-label="Physicality home"
         >
           Physicality
         </Link>
 
-        <nav className="hidden lg:flex items-center gap-4 xl:gap-6">
+        <nav className="hidden lg:flex items-center justify-center gap-3 xl:gap-5 min-w-0">
           {LINKS.map((l) => (
             <Link key={l.to} to={l.to} className={linkCls} data-testid={`nav-${l.label.toLowerCase().replace(/\s+/g, "-")}`}>
               {l.label}
@@ -48,7 +49,7 @@ export default function Nav() {
           )}
         </nav>
 
-        <div className="hidden lg:flex items-center gap-4 xl:gap-6">
+        <div className="hidden lg:flex items-center gap-3 xl:gap-5 justify-self-end">
           {user ? (
             <>
               <Link to="/account" className={linkCls} data-testid="nav-account">{user.name.split(" ")[0]}'s Shelf</Link>

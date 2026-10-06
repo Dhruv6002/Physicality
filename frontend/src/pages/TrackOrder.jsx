@@ -60,7 +60,7 @@ export default function TrackOrder() {
             data-testid="track-order-submit"
             className="w-full bg-terra text-paper px-6 py-4 font-mono-press text-xs uppercase tracking-widest hover:bg-terra-dark transition-colors disabled:opacity-50"
           >
-            {busy ? "Looking up the ledger…" : "Track order"}
+            {busy ? "Looking up order status…" : "Track order"}
           </button>
         </form>
       </div>
@@ -82,8 +82,13 @@ export default function TrackOrder() {
               </div>
             ))}
           </div>
+          {order.delivery_option && (order.status === "shipped" || order.status === "delivered") && (
+            <p className="mt-8 border-t border-line pt-5 font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke">
+              Delivery option · {order.delivery_option}
+            </p>
+          )}
           {order.tracking_id ? (
-            <p className="mt-8 border-t border-line pt-5 font-mono-press text-xs text-ink">
+            <p className="mt-4 font-mono-press text-xs text-ink">
               <span className="uppercase tracking-[0.2em] text-smoke">Tracking · </span>
               {order.tracking_url ? <a href={order.tracking_url} target="_blank" rel="noreferrer" className="link-underline">{order.tracking_id}</a> : order.tracking_id}
               {order.courier && <span className="text-smoke"> — {order.courier}</span>}

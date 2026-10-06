@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { UploadCloud } from "lucide-react";
+import { UploadCloud, X } from "lucide-react";
 import api, { fileUrl, formatApiError } from "../lib/api";
 import { useCart } from "../context/CartContext";
 import { Reveal, SectionHeading, RegistrationMarks } from "../components/Motion";
@@ -80,6 +80,18 @@ export default function CustomPoster() {
     toast.success(`Custom print · ${size} ${framing} — added to your cart`);
   };
 
+  const removeArtwork = (event) => {
+    event.stopPropagation();
+    if (uploading) return;
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
+    setImagePath(null);
+    setDimensions(null);
+    setFileName("");
+    setUploadProgress(0);
+    if (inputRef.current) inputRef.current.value = "";
+  };
+
   return (
     <div className="mx-auto max-w-7xl px-5 md:px-8 py-16 md:py-24" data-testid="custom-poster-page">
       <SectionHeading title={<>A custom <span className="italic">commission</span></>} className="mb-14" />
@@ -94,6 +106,16 @@ export default function CustomPoster() {
               <>
                 <img src={previewUrl || fileUrl(imagePath)} alt="Your uploaded artwork" className="w-full h-full object-cover" data-testid="artwork-preview" />
                 <RegistrationMarks />
+                <button
+                  type="button"
+                  onClick={removeArtwork}
+                  disabled={uploading}
+                  aria-label="Remove uploaded artwork"
+                  data-testid="remove-artwork-button"
+                  className="absolute top-3 right-3 grid place-items-center w-9 h-9 bg-paper border border-ink text-ink hover:bg-terra hover:text-paper transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <X size={17} />
+                </button>
                 <div className="absolute inset-x-3 bottom-3 flex flex-wrap items-center justify-between gap-2">
                   <span className="font-mono-press text-[10px] uppercase tracking-[0.2em] bg-paper border border-ink px-2 py-1">{fileName}</span>
                   {dimensions && <span className="font-mono-press text-[10px] uppercase tracking-[0.15em] bg-paper border border-ink px-2 py-1">{dimensions.width} × {dimensions.height}px</span>}

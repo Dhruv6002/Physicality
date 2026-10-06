@@ -13,7 +13,15 @@ api.interceptors.request.use((config) => {
 
 export function formatApiError(err) {
   const detail = err?.response?.data?.detail;
-  if (detail == null) return err?.message || "Something went wrong. Please try again.";
+  if (!err?.response && err?.message && !err?.isAxiosError && err?.code !== "ERR_NETWORK") {
+    return err.message;
+  }
+  if (detail == null) {
+    if (err?.code === "ERR_NETWORK" || !err?.response) {
+      return "Could not reach the payment server. Check the backend URL and CORS configuration.";
+    }
+    return err?.message || "Something went wrong. Please try again.";
+  }
   if (typeof detail === "string") return detail;
   if (Array.isArray(detail))
     return detail.map((e) => (e && typeof e.msg === "string" ? e.msg : JSON.stringify(e))).filter(Boolean).join(" ");

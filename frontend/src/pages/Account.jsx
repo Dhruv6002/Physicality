@@ -71,7 +71,7 @@ export default function Account() {
       )}
 
       {fetching ? (
-        <p className="font-mono-press text-xs uppercase tracking-[0.2em] text-smoke">Opening the ledger…</p>
+        <p className="font-mono-press text-xs uppercase tracking-[0.2em] text-smoke">Loading your orders…</p>
       ) : orders.length === 0 ? (
         <Reveal className="border border-line p-16 text-center" data-testid="no-orders">
           <p className="font-serif-press italic text-3xl text-ink">Your shelf is empty.</p>
@@ -111,6 +111,11 @@ export default function Account() {
                 <Timeline status={o.status} />
 
                 <div className="mt-6 border-t border-line pt-4">
+                  {o.delivery_option && (o.status === "shipped" || o.status === "delivered") && (
+                    <p className="font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke mb-2" data-testid={`delivery-option-${o.order_no}`}>
+                      Delivery option · {o.delivery_option}
+                    </p>
+                  )}
                   {o.tracking_id ? (
                     <p className="font-mono-press text-xs text-ink" data-testid={`tracking-${o.order_no}`}>
                       <span className="uppercase tracking-[0.2em] text-smoke">Tracking&nbsp;·&nbsp;</span>
@@ -121,7 +126,7 @@ export default function Account() {
                     </p>
                   ) : o.promo_applied ? (
                     <p className="font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke" data-testid={`no-tracking-${o.order_no}`}>
-                      Press-code order — a tracking number is not issued; progress above is your ledger.
+                      Press-code order — a tracking number is not issued; progress above shows its status.
                     </p>
                   ) : (
                     <p className="font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke" data-testid={`pending-tracking-${o.order_no}`}>

@@ -4,7 +4,24 @@ import Marquee from "react-fast-marquee";
 import { ArrowRight } from "lucide-react";
 import { MaskedLines, Reveal } from "../components/Motion";
 
-const GAMES = ["GTA VI", "Elden Ring", "Cyberpunk 2077", "The Last of Us", "God of War", "Spider-Man 2", "Red Dead Redemption", "Hollow Knight", "Minecraft", "Valorant"];
+const GAMES = [
+  "Forza HORIZON 5",
+  "Valorant",
+  "Elden Ring",
+  "God of War Ragnork",
+  "Resident Evil Requiem",
+  "The Ghost of Yotei",
+  "The Last of Us Part 2 Remastered",
+  "Grand Theft Auto VI",
+  "The Last of Us Part 2",
+  "Minecraft",
+  "Red Dead Redemption",
+  "Uncharted 4: A Thief's End",
+  "Cyberpunk 2077",
+  "God of War",
+  "Counter-Strike 2",
+  "007 First Light",
+];
 
 const STEPS = [
   { num: "I.", title: "Pick a title", body: "Name any game, browse the menu, or bring your own artwork." },
@@ -19,7 +36,7 @@ export default function Home() {
       <div className="border-b border-ink" data-testid="masthead-bar">
         <div className="mx-auto max-w-7xl px-5 md:px-8 py-3 flex items-center justify-between font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke">
           <span>Physical editions for game collectors</span>
-          <span className="hidden md:inline">Printed in India &nbsp;·&nbsp; ₹89 – ₹399</span>
+          <span className="hidden md:inline">Printed in India</span>
         </div>
       </div>
 
@@ -148,30 +165,21 @@ export default function Home() {
         </div>
       </section>
 
-      {/* COLOPHON CTA */}
       <section className="bg-ink" data-testid="colophon-section">
-        <div className="mx-auto max-w-7xl px-5 md:px-8 py-24 md:py-32 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-          <div className="lg:col-span-7">
-            <Reveal>
-              <h2 className="font-serif-press text-4xl md:text-6xl tracking-tight leading-[1.02] text-paper">
-                Ready to print something <span className="italic text-terra">worth keeping?</span>
-              </h2>
-            </Reveal>
-          </div>
-          <div className="lg:col-span-5 flex lg:justify-end">
-            <Reveal delay={0.15}>
-              <Link
-                to="/custom"
-                data-testid="colophon-custom-button"
-                className="group inline-flex items-center justify-between gap-6 border border-paper text-paper px-6 py-4 font-mono-press text-xs uppercase tracking-[0.2em] hover:bg-paper hover:text-ink transition-colors min-w-[280px]"
-              >
-                Design your own poster
-                <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
-              </Link>
-            </Reveal>
-          </div>
+        <div className="mx-auto max-w-7xl px-5 md:px-8 py-16 md:py-20 flex justify-center lg:justify-end">
+          <Reveal>
+            <Link
+              to="/custom"
+              data-testid="colophon-custom-button"
+              className="group inline-flex items-center justify-between gap-6 border border-paper text-paper px-6 py-4 font-mono-press text-xs uppercase tracking-[0.2em] hover:bg-paper hover:text-ink transition-colors min-w-[280px]"
+            >
+              Design your own poster
+              <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+            </Link>
+          </Reveal>
         </div>
       </section>
+
     </div>
   );
 }

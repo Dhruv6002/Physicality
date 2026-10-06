@@ -172,7 +172,7 @@ export default function Admin() {
       .then(({ data }) => {
         setOrders(data);
         const e = {};
-        data.forEach((o) => { e[o.id] = { status: o.status, tracking_id: o.tracking_id || "", courier: o.courier || "" }; });
+        data.forEach((o) => { e[o.id] = { status: o.status, tracking_id: o.tracking_id || "", courier: o.courier || "", delivery_option: o.delivery_option || "", tracking_url: o.tracking_url || "" }; });
         setEdits(e);
       })
       .catch((err) => toast.error(formatApiError(err)))
@@ -192,7 +192,7 @@ export default function Admin() {
     setSaving(id);
     try {
       await api.patch(`/admin/orders/${id}`, edits[id]);
-      toast.success("Ledger updated — customer emailed if the status moved");
+      toast.success("Order updated — customer emailed if the status moved");
       load();
     } catch (e) {
       toast.error(formatApiError(e));
@@ -205,10 +205,10 @@ export default function Admin() {
 
   return (
     <div className="mx-auto max-w-7xl px-5 md:px-8 py-16 md:py-24" data-testid="admin-page">
-      <SectionHeading index="The press office" title={tab === "orders" ? <>Order <span className="italic">ledger</span></> : <>Catalogue <span className="italic">editions</span></>} className="mb-10" />
+      <SectionHeading index="The press office" title={tab === "orders" ? <>Order <span className="italic">record</span></> : <>Catalogue <span className="italic">editions</span></>} className="mb-10" />
 
       <div className="flex border border-ink w-fit mb-12" role="tablist">
-        {[["orders", "Order ledger"], ["editions", "Editions"]].map(([t, label]) => (
+        {[["orders", "Order record"], ["editions", "Editions"]].map(([t, label]) => (
           <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)} data-testid={`admin-tab-${t}`}
             className={`px-6 py-3 font-mono-press text-xs uppercase tracking-widest transition-colors ${tab === t ? "bg-ink text-paper" : "text-ink hover:bg-paper2"}`}>
             {label}
@@ -230,7 +230,7 @@ export default function Admin() {
           </div>
 
           {fetching ? (
-            <p className="font-mono-press text-xs uppercase tracking-[0.2em] text-smoke">Reading the ledger…</p>
+            <p className="font-mono-press text-xs uppercase tracking-[0.2em] text-smoke">Loading orders…</p>
           ) : orders.length === 0 ? (
             <div className="border border-line p-16 text-center" data-testid="admin-no-orders">
               <p className="font-serif-press italic text-3xl text-ink">No orders yet.</p>
@@ -240,7 +240,7 @@ export default function Admin() {
               <table className="w-full text-left border-collapse min-w-[900px]" data-testid="admin-orders-table">
                 <thead>
                   <tr className="border-b border-ink bg-paper2">
-                    {["Order", "Customer", "Items", "Total", "Status", "Tracking", "Courier", ""].map((h) => (
+                    {["Order", "Customer", "Items", "Total", "Status", "Delivery option", "Tracking", "Courier", "Partner link", ""].map((h) => (
                       <th key={h} className="font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke px-4 py-3 font-normal">{h}</th>
                     ))}
                   </tr>
@@ -292,6 +292,15 @@ export default function Admin() {
                       </td>
                       <td className="px-4 py-4">
                         <input
+                          value={edits[o.id]?.delivery_option ?? ""}
+                          onChange={(e) => setEdit(o.id, "delivery_option", e.target.value)}
+                          placeholder="e.g. Speed Post"
+                          data-testid={`delivery-option-input-${o.order_no}`}
+                          className="w-32 bg-transparent border-b border-ink focus:border-terra outline-none py-1 font-mono-press text-xs text-ink placeholder:text-smoke/50"
+                        />
+                      </td>
+                      <td className="px-4 py-4">
+                        <input
                           value={edits[o.id]?.tracking_id ?? ""}
                           onChange={(e) => setEdit(o.id, "tracking_id", e.target.value)}
                           placeholder="e.g. 7845123690"
@@ -306,6 +315,15 @@ export default function Admin() {
                           placeholder="e.g. Delhivery"
                           data-testid={`courier-input-${o.order_no}`}
                           className="w-32 bg-transparent border-b border-ink focus:border-terra outline-none py-1 font-mono-press text-xs text-ink placeholder:text-smoke/50"
+                        />
+                      </td>
+                      <td className="px-4 py-4">
+                        <input
+                          value={edits[o.id]?.tracking_url ?? ""}
+                          onChange={(e) => setEdit(o.id, "tracking_url", e.target.value)}
+                          placeholder="https://partner.app/..."
+                          data-testid={`tracking-url-input-${o.order_no}`}
+                          className="w-44 bg-transparent border-b border-ink focus:border-terra outline-none py-1 font-mono-press text-xs text-ink placeholder:text-smoke/50"
                         />
                       </td>
                       <td className="px-4 py-4">

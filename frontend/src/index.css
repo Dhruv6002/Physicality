@@ -6,24 +6,24 @@
 
 @layer base {
     :root {
-        --background: 36 31% 94%;
-        --foreground: 60 3% 11%;
-        --card: 36 31% 94%;
-        --card-foreground: 60 3% 11%;
-        --popover: 36 31% 94%;
-        --popover-foreground: 60 3% 11%;
+        --background: 0 0% 100%;
+        --foreground: 0 0% 0%;
+        --card: 0 0% 100%;
+        --card-foreground: 0 0% 0%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 0 0% 0%;
         --primary: 11 55% 52%;
-        --primary-foreground: 36 31% 94%;
-        --secondary: 36 22% 89%;
-        --secondary-foreground: 60 3% 11%;
-        --muted: 36 22% 89%;
-        --muted-foreground: 50 4% 35%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 0 0% 97%;
+        --secondary-foreground: 0 0% 0%;
+        --muted: 0 0% 97%;
+        --muted-foreground: 0 0% 0%;
         --accent: 11 55% 52%;
-        --accent-foreground: 36 31% 94%;
+        --accent-foreground: 0 0% 100%;
         --destructive: 0 62% 40%;
-        --destructive-foreground: 36 31% 94%;
-        --border: 37 17% 84%;
-        --input: 37 17% 84%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 0 0% 90%;
+        --input: 0 0% 90%;
         --ring: 11 55% 52%;
         --radius: 0px;
     }
@@ -41,7 +41,7 @@
     }
     ::selection {
         background: #C85A43;
-        color: #F4F0EA;
+        color: #FFFFFF;
     }
 }
 
@@ -64,7 +64,7 @@ html.lenis, html.lenis body { height: auto; }
 .font-display-press { font-family: 'Bodoni Moda', serif; }
 .font-mono-press { font-family: 'IBM Plex Mono', monospace; }
 
-.rule-double { border-top: 3px double #1C1C1A; }
+.rule-double { border-top: 3px double #000000; }
 
 .link-underline {
     background-image: linear-gradient(#C85A43, #C85A43);

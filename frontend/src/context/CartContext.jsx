@@ -22,6 +22,15 @@ export function CartProvider({ children }) {
   const setQty = useCallback((key, qty) => {
     setItems((prev) => prev.map((i) => (i.key === key ? { ...i, qty: Math.max(1, Math.min(20, qty)) } : i)));
   }, []);
+  const updateItemPrice = useCallback((key, unitPrice, listUnitPrice) => {
+    setItems((prev) => {
+      const current = prev.find((item) => item.key === key);
+      if (!current || (current.unit_price === unitPrice && current.list_unit_price === listUnitPrice)) return prev;
+      return prev.map((item) => item.key === key
+        ? { ...item, unit_price: unitPrice, list_unit_price: listUnitPrice }
+        : item);
+    });
+  }, []);
   const clear = useCallback(() => { setItems([]); setPromo(""); }, []);
 
   const totals = useMemo(() => {
@@ -42,7 +51,7 @@ export function CartProvider({ children }) {
   const count = useMemo(() => items.reduce((s, i) => s + i.qty, 0), [items]);
 
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, setQty, clear, promo, setPromo, totals, count }}>
+    <CartContext.Provider value={{ items, addItem, removeItem, setQty, updateItemPrice, clear, promo, setPromo, totals, count }}>
       {children}
     </CartContext.Provider>
   );

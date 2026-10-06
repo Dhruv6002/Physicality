@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { X, Minus, Plus } from "lucide-react";
@@ -21,11 +21,27 @@ const loadRazorpay = () =>
 
 export default function Cart() {
   const { user } = useAuth();
-  const { items, removeItem, setQty, clear, promo, setPromo, totals } = useCart();
+  const { items, removeItem, setQty, updateItemPrice, clear, promo, setPromo, totals } = useCart();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const [preview, setPreview] = useState(null);
   const [shipping, setShipping] = useState({ name: "", phone: "", address: "", city: "", state: "", pincode: "" });
+
+  useEffect(() => {
+    let active = true;
+    api.get("/pricing").then(({ data }) => {
+      if (!active) return;
+      items.forEach((item) => {
+        if (item.kind !== "poster" && item.kind !== "custom") return;
+        const sale = data.posters?.[item.size];
+        const list = data.poster_list_prices?.[item.size];
+        const unitPrice = sale?.[item.framing] ?? sale?.unframed;
+        const listUnitPrice = list?.[item.framing] ?? list?.unframed ?? unitPrice;
+        if (Number.isFinite(unitPrice)) updateItemPrice(item.key, unitPrice, listUnitPrice);
+      });
+    }).catch(() => {});
+    return () => { active = false; };
+  }, [items, updateItemPrice]);
 
   const setField = (k) => (e) => setShipping((s) => ({ ...s, [k]: e.target.value }));
 
@@ -153,7 +169,9 @@ export default function Cart() {
                     </p>
                     <h3 className="font-serif-press italic text-xl text-ink leading-tight truncate">{i.title}</h3>
                     <p className="font-mono-press text-xs text-smoke mt-1">
-                      ₹{i.unit_price} each
+                      {i.list_unit_price > i.unit_price && <s className="mr-2">₹{i.list_unit_price}</s>}
+                      <span>₹{i.unit_price} each</span>
+                      {i.list_unit_price > i.unit_price && <span className="ml-2 text-terra">30% off</span>}
                     </p>
                     <div className="flex items-center gap-3 mt-3">
                       <div className="flex border border-ink">
@@ -170,7 +188,10 @@ export default function Cart() {
                       </button>
                     </div>
                   </div>
-                  <p className="font-mono-press text-sm text-ink shrink-0">₹{i.unit_price * i.qty}</p>
+                  <p className="font-mono-press text-sm text-ink shrink-0 text-right">
+                    {i.list_unit_price > i.unit_price && <s className="block text-xs text-smoke">₹{i.list_unit_price * i.qty}</s>}
+                    ₹{i.unit_price * i.qty}
+                  </p>
                 </div>
               ))}
             </div>

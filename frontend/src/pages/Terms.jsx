@@ -38,11 +38,13 @@ export default function Terms() {
         </div>
 
         <div className="space-y-4">
-          <h3 className="font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke">4. Returns & refunds</h3>
+          <h3 className="font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke">4. Refund & cancellation policy</h3>
           <p>
-            Customised and made-to-order items are generally non-returnable unless the item arrives damaged, incorrect,
-            or materially defective. Refund requests must be raised within a reasonable period after delivery and with
-            supporting evidence.
+            Orders cannot be cancelled once they have been shipped. We do not offer returns or refunds for change of mind,
+            incorrect product selection, or any other personal preference.
+          </p>
+          <p className="font-medium">
+            All sales are final. No refunds or returns will be provided once an order is placed.
           </p>
         </div>
 

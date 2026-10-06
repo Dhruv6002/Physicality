@@ -80,10 +80,10 @@ function App() {
             position="bottom-right"
             toastOptions={{
               style: {
-                background: "#F4F0EA",
-                border: "1px solid #1C1C1A",
+                background: "#FFFFFF",
+                border: "1px solid #000000",
                 borderRadius: 0,
-                color: "#1C1C1A",
+                color: "#000000",
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: "12px",
                 letterSpacing: "0.05em",

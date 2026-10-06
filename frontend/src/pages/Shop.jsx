@@ -7,7 +7,11 @@ import { Reveal, SectionHeading, RegistrationMarks } from "../components/Motion"
 import { Dialog, DialogContent, DialogTitle } from "../components/ui/dialog";
 
 const SIZES = ["A4", "A3", "A5"];
-const FALLBACK = { posters: { A4: { framed: 259, unframed: 149 }, A3: { framed: 399, unframed: 179 }, A5: { unframed: 89 } } };
+const FALLBACK = {
+  posters: { A4: { framed: 254, unframed: 154 }, A3: { framed: 400, unframed: 200 }, A5: { unframed: 81 } },
+  poster_list_prices: { A4: { framed: 363, unframed: 220 }, A3: { framed: 571, unframed: 285 }, A5: { unframed: 116 } },
+  poster_discount_percent: 30,
+};
 const LOCAL_POSTERS = [
   ["Forza HORIZON 5", "WhatsApp Image 2026-09-14 at 7.59.46 PM.jpeg", "WhatsApp Image 2026-09-14 at 7.59.47 PM.jpeg"],
   ["Valorant", "WhatsApp Image 2026-09-14 at 7.59.48 PM.jpeg", "WhatsApp Image 2026-09-14 at 7.59.50 PM.jpeg"],
@@ -42,6 +46,21 @@ function priceFor(pricing, size, framing) {
   const t = pricing?.posters?.[size];
   if (!t) return null;
   return t[framing] ?? t.unframed;
+}
+
+function listPriceFor(pricing, size, framing) {
+  const t = pricing?.poster_list_prices?.[size];
+  return t?.[framing] ?? t?.unframed ?? priceFor(pricing, size, framing);
+}
+
+function PriceTag({ pricing, size, framing, testId }) {
+  return (
+    <span className="inline-flex flex-wrap items-baseline gap-x-2 gap-y-1" data-testid={testId}>
+      <s className="font-mono-press text-xs text-smoke">₹{listPriceFor(pricing, size, framing)}</s>
+      <span className="font-mono-press text-sm text-ink">₹{priceFor(pricing, size, framing)}</span>
+      <span className="font-mono-press text-[9px] uppercase tracking-widest text-terra">{pricing?.poster_discount_percent ?? 30}% off</span>
+    </span>
+  );
 }
 
 function Picker({ label, options, value, onChange, disabledOption, testPrefix }) {
@@ -164,7 +183,10 @@ function PosterGallery({ poster }) {
       </div>
       <RegistrationMarks className="opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
       <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
-        <DialogContent className="w-[calc(100vw-2rem)] max-w-7xl border-ink bg-ink p-3 sm:p-5">
+        <DialogContent
+          className="w-[calc(100vw-2rem)] max-w-7xl border-ink bg-ink p-3 sm:p-5"
+          closeButtonClassName="right-3 top-3 z-10 rounded-full bg-paper p-2 text-ink opacity-100 hover:bg-terra hover:text-paper focus:ring-paper"
+        >
           <DialogTitle className="sr-only">{poster.title} full-size image</DialogTitle>
           <img
             src={currentImage}
@@ -231,14 +253,14 @@ export default function Shop() {
 
   const addCatalog = (p) => {
     const { size, framing } = cardSel(p.id);
-    addItem({ kind: "poster", product_id: p.id, title: p.title, game: p.game, size, framing, unit_price: priceFor(pricing, size, framing), qty: 1, image_url: p.image_url || p.images?.[0], image_path: p.image_path });
+    addItem({ kind: "poster", product_id: p.id, title: p.title, game: p.game, size, framing, unit_price: priceFor(pricing, size, framing), list_unit_price: listPriceFor(pricing, size, framing), qty: 1, image_url: p.image_url || p.images?.[0], image_path: p.image_path });
     toast.success(`${p.title} · ${size} ${framing} — added to your cart`);
   };
 
   const addAnyGame = () => {
     if (!anyGame.trim()) { toast.error("Tell us which game first"); return; }
     const price = priceFor(pricing, anySize, anyFraming);
-    addItem({ kind: "poster", title: `${anyGame.trim()} — Game Poster`, game: anyGame.trim(), size: anySize, framing: anyFraming, unit_price: price, qty: 1 });
+    addItem({ kind: "poster", title: `${anyGame.trim()} — Game Poster`, game: anyGame.trim(), size: anySize, framing: anyFraming, unit_price: price, list_unit_price: listPriceFor(pricing, anySize, anyFraming), qty: 1 });
     toast.success(`${anyGame.trim()} · ${anySize} ${anyFraming} — added to your cart`);
     setAnyGame("");
   };
@@ -290,9 +312,7 @@ export default function Shop() {
               <Picker label="Finish" options={["unframed", "framed"]} value={anyFraming} onChange={setAnyFraming} disabledOption={(o) => anySize === "A5" && o === "framed"} testPrefix="any-framing" />
             </div>
             <div className="flex items-center gap-6">
-              <span className="font-mono-press text-lg text-ink" data-testid="any-game-price">
-                ₹{priceFor(pricing, anySize, anyFraming)}
-              </span>
+              <PriceTag pricing={pricing} size={anySize} framing={anyFraming} testId="any-game-price" />
               <button
                 onClick={addAnyGame}
                 data-testid="any-game-add-button"
@@ -322,9 +342,7 @@ export default function Shop() {
                     <Picker label="Size" options={SIZES} value={size} onChange={(s) => setCard(p.id, "size", s)} testPrefix={`size-${p.id}`} />
                     <Picker label="Finish" options={["unframed", "framed"]} value={framing} onChange={(f) => setCard(p.id, "framing", f)} disabledOption={(o) => size === "A5" && o === "framed"} testPrefix={`framing-${p.id}`} />
                     <div className="flex items-center justify-between">
-                      <span className="font-mono-press text-sm text-ink" data-testid={`price-${p.id}`}>
-                        ₹{priceFor(pricing, size, framing)}
-                      </span>
+                      <PriceTag pricing={pricing} size={size} framing={framing} testId={`price-${p.id}`} />
                       <button
                         onClick={() => addCatalog(p)}
                         data-testid={`add-to-cart-${p.id}`}

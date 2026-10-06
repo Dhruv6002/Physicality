@@ -13,13 +13,13 @@ module.exports = {
                 sm: '0px'
             },
             colors: {
-                paper: '#F4F0EA',
-                paper2: '#EAE4D9',
-                ink: '#1C1C1A',
-                smoke: '#5C5A56',
+                paper: '#FFFFFF',
+                paper2: '#F7F7F7',
+                ink: '#000000',
+                smoke: '#000000',
                 terra: '#C85A43',
                 'terra-dark': '#B04D38',
-                line: '#DED8CE',
+                line: '#E5E5E5',
                 background: 'hsl(var(--background))',
                 foreground: 'hsl(var(--foreground))',
                 card: { DEFAULT: 'hsl(var(--card))', foreground: 'hsl(var(--card-foreground))' },

@@ -53,6 +53,27 @@ api_router = APIRouter(prefix="/api")
 JWT_ALGORITHM = "HS256"
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
 PROMO_CODE = "FREEHOSTEL5050"
+BASE_POSTER_PRICES = {
+    "A4": {"framed": 259, "unframed": 149},
+    "A3": {"framed": 399, "unframed": 179},
+    "A5": {"unframed": 89},
+}
+POSTER_INCREASES = {"A4": 20, "A3": 40}
+POSTER_DISCOUNT_PERCENT = 30
+POSTER_LIST_PRICES = {
+    size: {
+        framing: ((price + POSTER_INCREASES.get(size, 0)) * 130 + 50) // 100
+        for framing, price in options.items()
+    }
+    for size, options in BASE_POSTER_PRICES.items()
+}
+POSTER_PRICES = {
+    size: {framing: (price * 70 + 50) // 100 for framing, price in options.items()}
+    for size, options in POSTER_LIST_PRICES.items()
+}
+COVER_PRICE = 199
+PLATFORMS = ["PlayStation 5", "PlayStation 4", "Xbox", "PC"]
+ORDER_STATUSES = ["placed", "packed", "shipped", "delivered"]
 LOCAL_POSTER_SEED = [
     ("Forza HORIZON 5", "WhatsApp Image 2026-09-14 at 7.59.46 PM.jpeg"),
     ("Valorant", "WhatsApp Image 2026-09-14 at 7.59.48 PM.jpeg"),
@@ -618,7 +639,13 @@ async def list_posters():
 
 @api_router.get("/pricing")
 async def pricing():
-    return {"posters": POSTER_PRICES, "cover": COVER_PRICE, "platforms": PLATFORMS}
+    return {
+        "posters": POSTER_PRICES,
+        "poster_list_prices": POSTER_LIST_PRICES,
+        "poster_discount_percent": POSTER_DISCOUNT_PERCENT,
+        "cover": COVER_PRICE,
+        "platforms": PLATFORMS,
+    }
 
 
 # ---------- Uploads ----------

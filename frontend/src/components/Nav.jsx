@@ -69,7 +69,7 @@ export default function Nav() {
           </Link>
         </div>
 
-        <div className="flex lg:hidden items-center gap-4">
+        <div className="col-start-3 flex lg:hidden items-center justify-self-end gap-4">
           <Link to="/cart" className="relative text-ink" data-testid="nav-mobile-cart" aria-label={`Cart with ${count} items`}>
             <ShoppingBag size={20} />
             {count > 0 && <span className="absolute -right-2 -top-2 min-w-4 h-4 px-1 flex items-center justify-center bg-terra text-paper font-mono-press text-[9px]">{count}</span>}

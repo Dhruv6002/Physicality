@@ -897,10 +897,20 @@ async def create_razorpay_order(body: dict, user: dict = Depends(get_current_use
                                     "payment_capture": 1, "receipt": order["order_no"][:40]})
     except Exception as exc:
         logger.exception("Razorpay order creation failed")
-        raise HTTPException(status_code=502, detail=f"Razorpay error: {str(exc)}")
+        error_message = str(exc).casefold()
+        if any(message in error_message for message in ("authentication", "invalid key", "unauthorized", "401")):
+            raise HTTPException(
+                status_code=502,
+                detail="Razorpay authentication failed. Set matching RAZORPAY_KEY_ID and "
+                       "RAZORPAY_KEY_SECRET values from the same test or live mode in the backend environment.",
+            ) from exc
+        raise HTTPException(
+            status_code=502,
+            detail="Razorpay could not create the payment order. Please try again later.",
+        ) from exc
     await db.orders.update_one({"_id": order["_id"]}, {"$set": {"razorpay_order_id": rz_order["id"]}})
     return {"razorpay_order_id": rz_order["id"], "amount": rz_order["amount"], "currency": "INR",
-            "key_id": os.environ.get("RAZORPAY_KEY_ID")}
+            "key_id": os.environ.get("RAZORPAY_KEY_ID", "").strip()}
 
 
 @api_router.post("/payments/verify")

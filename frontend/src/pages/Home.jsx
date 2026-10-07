@@ -34,8 +34,8 @@ export default function Home() {
     <div data-testid="home-page">
       {/* HERO */}
       <section className="border-b border-ink" data-testid="hero-section">
-        <div className="mx-auto max-w-7xl px-5 md:px-8 py-8 md:py-12 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 items-center">
-          <div className="overflow-hidden border border-ink bg-ink aspect-[16/9]">
+        <div className="mx-auto max-w-7xl px-5 md:px-8 py-8 md:py-12 grid grid-cols-1 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-8 lg:gap-12 items-center">
+          <div className="min-w-0 overflow-hidden border border-ink bg-ink aspect-[16/9]">
             <img
               src="/images/WhatsApp%20Image%202026-10-07%20at%208.59.58%20PM.jpeg"
               alt="Physicality poster collection and current poster offers"
@@ -43,12 +43,12 @@ export default function Home() {
               fetchPriority="high"
             />
           </div>
-          <div className="py-4 lg:py-8">
+          <div className="min-w-0 py-4 lg:py-8">
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.15, duration: 0.8 }}
-              className="font-mono-press text-xs uppercase tracking-[0.2em] text-ink font-bold mb-5"
+              className="font-mono-press text-xs uppercase tracking-[0.2em] text-terra mb-5"
               data-testid="hero-eyebrow"
             >
               Physical editions for game collectors
@@ -83,7 +83,7 @@ export default function Home() {
           {GAMES.map((g, i) => (
             <span key={i} className="flex items-center">
               <span className="font-serif-press italic text-2xl md:text-3xl text-paper mx-5">{g}</span>
-              <span className="text-paper text-lg font-bold">✦</span>
+              <span className="text-terra text-lg">✦</span>
             </span>
           ))}
         </Marquee>
@@ -124,7 +124,7 @@ export default function Home() {
       <section className="border-b border-ink" data-testid="process-section">
         <div className="mx-auto max-w-7xl px-5 md:px-8 py-24 md:py-32">
           <Reveal>
-            <p className="font-mono-press text-xs uppercase tracking-[0.2em] text-ink font-bold mb-6">✦ The process</p>
+            <p className="font-mono-press text-xs uppercase tracking-[0.2em] text-terra mb-6">✦ The process</p>
             <h2 className="font-serif-press text-4xl md:text-6xl tracking-tight leading-[1.02] text-ink max-w-3xl">
               Choose, customise, <span className="italic">delivered.</span>
             </h2>
@@ -136,7 +136,7 @@ export default function Home() {
           <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-10">
             {STEPS.map((s, i) => (
               <Reveal key={s.num} delay={i * 0.12} className="border-t border-ink pt-6">
-                <p className="font-display-press text-4xl text-ink font-bold">{s.num}</p>
+                <p className="font-display-press text-4xl text-terra">{s.num}</p>
                 <h3 className="font-serif-press text-2xl text-ink mt-4 tracking-tight">{s.title}</h3>
                 <p className="mt-3 text-sm text-smoke leading-relaxed">{s.body}</p>
               </Reveal>
@@ -145,13 +145,13 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="bg-ink" data-testid="colophon-section">
-        <div className="mx-auto max-w-7xl px-5 md:px-8 py-16 md:py-20 flex justify-center lg:justify-end">
+      <section className="bg-paper" data-testid="colophon-section">
+        <div className="mx-auto max-w-7xl px-5 md:px-8 py-16 md:py-20 flex justify-center">
           <Reveal>
             <Link
               to="/custom"
               data-testid="colophon-custom-button"
-              className="group inline-flex items-center justify-between gap-6 border border-paper text-paper px-6 py-4 font-mono-press text-xs uppercase tracking-[0.2em] hover:bg-paper hover:text-ink transition-colors min-w-[280px]"
+              className="group inline-flex items-center justify-between gap-6 border border-terra bg-terra text-paper px-6 py-4 font-mono-press text-xs uppercase tracking-[0.2em] hover:bg-terra-dark hover:border-terra-dark transition-colors min-w-[280px]"
             >
               Design your own poster
               <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />

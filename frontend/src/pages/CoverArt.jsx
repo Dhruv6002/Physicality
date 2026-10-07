@@ -4,8 +4,7 @@ import { Disc3, Gift } from "lucide-react";
 import api from "../lib/api";
 import { useCart } from "../context/CartContext";
 import { Reveal, SectionHeading } from "../components/Motion";
-
-const DVD_CASE = "/images/ChatGPT Image Sep 12, 2026, 10_11_11 PM.png";
+import { DVD_CASE_IMAGE } from "../constants/productImages";
 
 export default function CoverArt() {
   const { addItem } = useCart();
@@ -23,7 +22,15 @@ export default function CoverArt() {
 
   const add = () => {
     if (!game.trim()) { toast.error("Tell us which game first"); return; }
-    addItem({ kind: "cover", title: `${game.trim()} — DVD Cover Box`, game: game.trim(), platform, unit_price: price, qty: 1 });
+    addItem({
+      kind: "cover",
+      title: `${game.trim()} — DVD Cover Box`,
+      game: game.trim(),
+      platform,
+      image_url: DVD_CASE_IMAGE,
+      unit_price: price,
+      qty: 1,
+    });
     toast.success(`${game.trim()} · ${platform} — added to your cart`);
     setGame("");
   };
@@ -34,7 +41,7 @@ export default function CoverArt() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
         <Reveal className="relative">
           <div className="relative border border-ink">
-            <img src={DVD_CASE} alt="A DVD box awaiting its cover art" className="w-full aspect-square object-cover" />
+            <img src={DVD_CASE_IMAGE} alt="A DVD box awaiting its cover art" className="w-full aspect-square object-cover" />
           </div>
           <div className="mt-4 border border-terra bg-paper2 p-5 flex items-start gap-4">
             <Gift size={20} className="text-terra shrink-0 mt-0.5" />

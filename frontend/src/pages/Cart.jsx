@@ -119,46 +119,42 @@ export default function Cart() {
         promo_code: promo || null,
         shipping,
       };
-      const { data: order } = await api.post("/orders", payload);
       const { data: cfg } = await api.get("/payments/config");
-      if (cfg.configured) {
-        try {
-          const { data: rz } = await api.post("/payments/razorpay-order", { order_id: order.id });
-          const ok = await loadRazorpay();
-          if (!ok) {
-            throw new Error("Could not load Razorpay checkout. Check your browser connection or disable an extension blocking checkout. No payment was taken.");
-          }
-          const rzp = new window.Razorpay({
-            key: rz.key_id,
-            amount: rz.amount,
-            currency: rz.currency,
-            name: "Physicality",
-            description: `Order ${order.order_no}`,
-            order_id: rz.razorpay_order_id,
-            prefill: { name: shipping.name, email: user.email, contact: shipping.phone },
-            theme: { color: "#C85A43" },
-            modal: { ondismiss: () => setBusy(false) },
-            handler: async (resp) => {
-              try {
-                await api.post("/payments/verify", { order_id: order.id, ...resp });
-                clear();
-                navigate(`/account?placed=${order.order_no}`);
-              } catch (e) {
-                toast.error(formatApiError(e));
-                setBusy(false);
-              }
-            },
-          });
-          rzp.open();
-          return;
-        } catch (rzErr) {
-          throw rzErr;
-        }
-      }
-
-      if (!cfg.mock_enabled) {
+      if (!cfg.configured && !cfg.mock_enabled) {
         throw new Error("Razorpay checkout is not configured. Please try again later.");
       }
+      const { data: order } = await api.post("/orders", payload);
+      if (cfg.configured) {
+        const { data: rz } = await api.post("/payments/razorpay-order", { order_id: order.id });
+        const ok = await loadRazorpay();
+        if (!ok) {
+          throw new Error("Could not load Razorpay checkout. Check your browser connection or disable an extension blocking checkout. No payment was taken.");
+        }
+        const rzp = new window.Razorpay({
+          key: rz.key_id,
+          amount: rz.amount,
+          currency: rz.currency,
+          name: "Physicality",
+          description: `Order ${order.order_no}`,
+          order_id: rz.razorpay_order_id,
+          prefill: { name: shipping.name, email: user.email, contact: shipping.phone },
+          theme: { color: "#C85A43" },
+          modal: { ondismiss: () => setBusy(false) },
+          handler: async (resp) => {
+            try {
+              await api.post("/payments/verify", { order_id: order.id, ...resp });
+              clear();
+              navigate(`/account?placed=${order.order_no}`);
+            } catch (e) {
+              toast.error(formatApiError(e));
+              setBusy(false);
+            }
+          },
+        });
+        rzp.open();
+        return;
+      }
+
       await api.post("/payments/mock-pay", { order_id: order.id });
       clear();
       navigate(`/account?placed=${order.order_no}`);

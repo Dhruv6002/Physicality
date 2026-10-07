@@ -828,10 +828,10 @@ async def create_order(body: OrderCreate, user: dict = Depends(get_current_user)
     doc = {
         "order_no": order_no, "user_id": str(user["_id"]), "user_email": user["email"],
         "items": line_items, "subtotal": subtotal, "discount": discount, "total": total,
-        "promo_applied": promo_applied, "status": "placed", "payment_status": "pending",
+        "promo_applied": promo_applied, "status": "pending_payment", "payment_status": "pending",
         "payment_id": None, "razorpay_order_id": None, "tracking_id": None, "courier": None,
         "delivery_option": None, "shipping": body.shipping.model_dump(), "created_at": now,
-        "status_history": [{"status": "placed", "at": now.isoformat()}],
+        "status_history": [],
     }
     result = await db.orders.insert_one(doc)
     doc["_id"] = result.inserted_id
@@ -840,13 +840,17 @@ async def create_order(body: OrderCreate, user: dict = Depends(get_current_user)
 
 @api_router.get("/orders")
 async def my_orders(user: dict = Depends(get_current_user)):
-    docs = await db.orders.find({"user_id": str(user["_id"])}).sort("created_at", -1).to_list(200)
+    docs = await db.orders.find({"user_id": str(user["_id"]), "payment_status": "paid"}).sort("created_at", -1).to_list(200)
     return [order_response(d, include_tracking=not d.get("promo_applied", False)) for d in docs]
 
 
 @api_router.get("/orders/track")
 async def track_order(order_no: str = Query(..., min_length=3), email: str = Query(..., min_length=3)):
-    order = await db.orders.find_one({"order_no": order_no.strip().upper(), "user_email": email.strip().lower()})
+    order = await db.orders.find_one({
+        "order_no": order_no.strip().upper(),
+        "user_email": email.strip().lower(),
+        "payment_status": "paid",
+    })
     if not order:
         raise HTTPException(status_code=404, detail="We could not find an order with those details")
     response = order_response(order, include_tracking=not order.get("promo_applied", False))
@@ -897,6 +901,11 @@ async def create_razorpay_order(body: dict, user: dict = Depends(get_current_use
                                     "payment_capture": 1, "receipt": order["order_no"][:40]})
     except Exception as exc:
         logger.exception("Razorpay order creation failed")
+        await db.orders.delete_one({
+            "_id": order["_id"],
+            "payment_status": "pending",
+            "status": "pending_payment",
+        })
         error_message = str(exc).casefold()
         if any(message in error_message for message in ("authentication", "invalid key", "unauthorized", "401")):
             raise HTTPException(
@@ -930,9 +939,13 @@ async def verify_payment(body: dict, user: dict = Depends(get_current_user)):
         })
     except Exception:
         raise HTTPException(status_code=400, detail="Payment signature verification failed")
-    await db.orders.update_one({"_id": order["_id"]},
-                               {"$set": {"payment_status": "paid",
-                                         "payment_id": body.get("razorpay_payment_id")}})
+    now = datetime.now(timezone.utc).isoformat()
+    await db.orders.update_one(
+        {"_id": order["_id"], "payment_status": "pending"},
+        {"$set": {"payment_status": "paid", "payment_id": body.get("razorpay_payment_id"),
+                  "status": "placed"},
+         "$push": {"status_history": {"status": "placed", "at": now}}},
+    )
     return {"ok": True}
 
 
@@ -944,8 +957,12 @@ async def mock_pay(body: dict, user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=503, detail="Mock payments are disabled")
     order = await get_payable_order(body.get("order_id", ""), user)
     payment_id = f"MOCKPAY-{uuid.uuid4().hex[:10].upper()}"
-    await db.orders.update_one({"_id": order["_id"]},
-                               {"$set": {"payment_status": "paid", "payment_id": payment_id}})
+    now = datetime.now(timezone.utc).isoformat()
+    await db.orders.update_one(
+        {"_id": order["_id"], "payment_status": "pending"},
+        {"$set": {"payment_status": "paid", "payment_id": payment_id, "status": "placed"},
+         "$push": {"status_history": {"status": "placed", "at": now}}},
+    )
     return {"ok": True, "payment_id": payment_id}
 
 
@@ -960,7 +977,7 @@ class AdminOrderUpdate(BaseModel):
 
 @api_router.get("/admin/orders")
 async def admin_orders(admin: dict = Depends(require_admin)):
-    docs = await db.orders.find({}).sort("created_at", -1).to_list(500)
+    docs = await db.orders.find({"payment_status": "paid"}).sort("created_at", -1).to_list(500)
     return [order_response(d) for d in docs]
 
 
@@ -969,12 +986,12 @@ async def admin_update_order(order_id: str, body: AdminOrderUpdate, admin: dict 
     order = await db.orders.find_one({"_id": ObjectId(order_id)})
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
+    if order.get("payment_status") != "paid":
+        raise HTTPException(status_code=400, detail="Only paid orders can be updated")
     updates = {}
     if body.status:
         if body.status not in ORDER_STATUSES:
             raise HTTPException(status_code=400, detail="Invalid status")
-        if body.status in ("shipped", "delivered") and order.get("payment_status") != "paid":
-            raise HTTPException(status_code=400, detail="Only paid orders can be marked shipped or delivered")
         updates["status"] = body.status
     if body.tracking_id is not None:
         updates["tracking_id"] = body.tracking_id.strip() or None

@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
+import { deleteArtwork } from "../lib/artworkStore";
 
 const CartContext = createContext(null);
 export const PROMO_CODE = "tO+B3Pma):H3*6PSDtsA1Q@Q$b_XFUSy%syzm3Gmh5}iPz&[xR2<FPUDI@(dPW;";
@@ -36,7 +37,11 @@ export function CartProvider({ children }) {
     setItems((prev) => [...prev, { ...item, key: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}` }]);
   }, []);
 
-  const removeItem = useCallback((key) => setItems((prev) => prev.filter((i) => i.key !== key)), []);
+  const removeItem = useCallback((key) => {
+    const removed = items.find((item) => item.key === key);
+    if (removed?.pending_upload_id) deleteArtwork(removed.pending_upload_id).catch(() => {});
+    setItems((prev) => prev.filter((item) => item.key !== key));
+  }, [items]);
   const setQty = useCallback((key, qty) => {
     setItems((prev) => prev.map((i) => (i.key === key ? { ...i, qty: Math.max(1, Math.min(20, qty)) } : i)));
   }, []);
@@ -49,7 +54,18 @@ export function CartProvider({ children }) {
         : item);
     });
   }, []);
-  const clear = useCallback(() => { setItems([]); setPromo(""); }, []);
+  const updateItemImagePath = useCallback((key, imagePath) => {
+    setItems((prev) => prev.map((item) => item.key === key
+      ? { ...item, image_path: imagePath, pending_upload_id: null }
+      : item));
+  }, []);
+  const clear = useCallback(() => {
+    items.forEach((item) => {
+      if (item.pending_upload_id) deleteArtwork(item.pending_upload_id).catch(() => {});
+    });
+    setItems([]);
+    setPromo("");
+  }, [items]);
 
   const totals = useMemo(() => {
     const subtotal = items.reduce((s, i) => s + i.unit_price * i.qty, 0);
@@ -64,7 +80,7 @@ export function CartProvider({ children }) {
   const count = useMemo(() => items.reduce((s, i) => s + i.qty, 0), [items]);
 
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, setQty, updateItemPrice, clear, promo, setPromo, totals, count }}>
+    <CartContext.Provider value={{ items, addItem, removeItem, setQty, updateItemPrice, updateItemImagePath, clear, promo, setPromo, totals, count }}>
       {children}
     </CartContext.Provider>
   );

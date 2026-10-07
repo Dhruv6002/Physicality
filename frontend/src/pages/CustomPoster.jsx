@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { UploadCloud, X } from "lucide-react";
-import api, { fileUrl, formatApiError } from "../lib/api";
+import api from "../lib/api";
+import { saveArtwork } from "../lib/artworkStore";
 import { useCart } from "../context/CartContext";
 import { Reveal, SectionHeading, RegistrationMarks } from "../components/Motion";
 
@@ -13,15 +14,11 @@ export default function CustomPoster() {
   const [pricing, setPricing] = useState(FALLBACK);
   const [size, setSize] = useState("A4");
   const [framing, setFraming] = useState("unframed");
-  const [imagePath, setImagePath] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [dimensions, setDimensions] = useState(null);
   const [fileName, setFileName] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadError, setUploadError] = useState("");
+  const [adding, setAdding] = useState(false);
   const inputRef = useRef(null);
-  const uploadControllerRef = useRef(null);
   const selectedFileRef = useRef(null);
 
   useEffect(() => {
@@ -30,46 +27,8 @@ export default function CustomPoster() {
 
   const price = pricing[size]?.[framing] ?? pricing[size]?.unframed;
 
-  const uploadArtwork = async (file) => {
-    const controller = new AbortController();
-    uploadControllerRef.current = controller;
-    setUploading(true);
-    try {
-      const form = new FormData();
-      form.append("file", file);
-      const { data } = await api.post("/upload", form, {
-        signal: controller.signal,
-        onUploadProgress: (event) => {
-          if (event.total) setUploadProgress(Math.round((event.loaded / event.total) * 100));
-        },
-      });
-      if (controller.signal.aborted) return;
-      if (!data?.path) throw new Error("The upload completed without a file path. Please retry.");
-      setImagePath(data.path);
-      setUploadError("");
-      setUploadProgress(100);
-      toast.success("Artwork received by the press");
-      return data.path;
-    } catch (e) {
-      if (e?.code !== "ERR_CANCELED") {
-        const isNetworkError = e?.code === "ERR_NETWORK" || !e?.response;
-        setUploadError(isNetworkError
-          ? "Upload did not finish. We will retry when you add it to your cart."
-          : formatApiError(e));
-      }
-      return null;
-    } finally {
-      if (uploadControllerRef.current === controller) {
-        uploadControllerRef.current = null;
-        setUploading(false);
-        if (inputRef.current) inputRef.current.value = "";
-      }
-    }
-  };
-
-  const onFile = async (file) => {
+  const onFile = (file) => {
     if (!file) return;
-    uploadControllerRef.current?.abort();
     const extension = file.name?.split(".").pop()?.toLowerCase();
     const supportedExtensions = ["jpg", "jpeg", "png", "webp"];
     const supportedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -86,14 +45,10 @@ export default function CustomPoster() {
     selectedFileRef.current = file;
     setPreviewUrl(localPreview);
     setDimensions(null);
-    setImagePath(null);
-    setUploadError("");
     setFileName(file.name);
-    setUploadProgress(0);
     const image = new Image();
     image.onload = () => setDimensions({ width: image.naturalWidth, height: image.naturalHeight });
     image.src = localPreview;
-    await uploadArtwork(file);
   };
 
   useEffect(() => () => {
@@ -101,30 +56,30 @@ export default function CustomPoster() {
   }, [previewUrl]);
 
   const add = async () => {
-    if (!imagePath && !selectedFileRef.current) {
+    if (!selectedFileRef.current) {
       toast.error("Choose an artwork image first");
       return;
     }
-    const uploadedPath = imagePath || await uploadArtwork(selectedFileRef.current);
-    if (!uploadedPath) return;
-    addItem({ kind: "custom", title: "Custom poster", game: fileName || "Your artwork", size, framing, unit_price: price, qty: 1, image_path: uploadedPath });
-    toast.success(`Custom print · ${size} ${framing} — added to your cart`);
+    setAdding(true);
+    try {
+      const pendingUploadId = await saveArtwork(selectedFileRef.current);
+      addItem({ kind: "custom", title: "Custom poster", game: fileName || "Your artwork", size, framing, unit_price: price, qty: 1, pending_upload_id: pendingUploadId });
+      toast.success(`Custom print · ${size} ${framing} — added to your cart`);
+    } catch {
+      toast.error("Could not save the artwork on this device. Please try again.");
+    } finally {
+      setAdding(false);
+    }
   };
 
   const removeArtwork = (event) => {
     event.preventDefault();
     event.stopPropagation();
-    uploadControllerRef.current?.abort();
-    uploadControllerRef.current = null;
-    setUploading(false);
     selectedFileRef.current = null;
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
-    setImagePath(null);
-    setUploadError("");
     setDimensions(null);
     setFileName("");
-    setUploadProgress(0);
     if (inputRef.current) inputRef.current.value = "";
   };
 
@@ -140,7 +95,7 @@ export default function CustomPoster() {
           >
             {previewUrl ? (
               <>
-                <img src={previewUrl || fileUrl(imagePath)} alt="Your uploaded artwork" className="w-full h-full object-cover" data-testid="artwork-preview" />
+                <img src={previewUrl} alt="Your uploaded artwork" className="w-full h-full object-cover" data-testid="artwork-preview" />
                 <RegistrationMarks />
                 <button
                   type="button"
@@ -155,17 +110,12 @@ export default function CustomPoster() {
                   <span className="font-mono-press text-[10px] uppercase tracking-[0.2em] bg-paper border border-ink px-2 py-1">{fileName}</span>
                   {dimensions && <span className="font-mono-press text-[10px] uppercase tracking-[0.15em] bg-paper border border-ink px-2 py-1">{dimensions.width} × {dimensions.height}px</span>}
                 </div>
-                {uploading && (
-                  <div className="absolute inset-x-0 bottom-0 h-1 bg-paper/70" aria-label={`Uploading ${uploadProgress}%`}>
-                    <div className="h-full bg-terra transition-[width]" style={{ width: `${uploadProgress}%` }} />
-                  </div>
-                )}
               </>
             ) : (
               <div className="text-center px-8">
                 <UploadCloud className="mx-auto text-terra" size={32} />
                 <p className="font-serif-press italic text-2xl text-ink mt-5">
-                  {uploading ? `Pressing your artwork… ${uploadProgress}%` : "Drop your artwork here"}
+                  Drop your artwork here
                 </p>
                 <p className="font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke mt-3">JPG · PNG · WEBP — up to 8 MB</p>
               </div>
@@ -227,16 +177,15 @@ export default function CustomPoster() {
             </div>
           </div>
           <div className="mt-auto pt-10 border-t border-line">
-            {uploadError && <p role="status" data-testid="artwork-upload-status" className="mb-4 text-sm text-smoke">{uploadError}</p>}
             <div className="flex items-center justify-between">
             <span className="font-mono-press text-lg text-ink" data-testid="custom-price">₹{price}</span>
             <button
               onClick={add}
-              disabled={uploading}
+              disabled={adding}
               data-testid="custom-add-to-cart-button"
               className="bg-terra text-paper px-6 py-3 font-mono-press text-xs uppercase tracking-widest hover:bg-terra-dark transition-colors disabled:opacity-50"
             >
-              {uploading ? "Uploading artwork…" : "Add to cart"}
+              {adding ? "Adding…" : "Add to cart"}
             </button>
             </div>
           </div>

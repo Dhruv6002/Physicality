@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { X, Minus, Plus } from "lucide-react";
 import api, { fileUrl, formatApiError } from "../lib/api";
+import { deleteArtwork, getArtwork } from "../lib/artworkStore";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { Reveal, SectionHeading } from "../components/Motion";
@@ -21,10 +22,11 @@ const loadRazorpay = () =>
 
 export default function Cart() {
   const { user } = useAuth();
-  const { items, removeItem, setQty, updateItemPrice, clear, promo, setPromo, totals } = useCart();
+  const { items, removeItem, setQty, updateItemPrice, updateItemImagePath, clear, promo, setPromo, totals } = useCart();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const [preview, setPreview] = useState(null);
+  const [localArtworkUrls, setLocalArtworkUrls] = useState({});
   const [shipping, setShipping] = useState({ name: "", phone: "", address: "", city: "", state: "", pincode: "" });
 
   useEffect(() => {
@@ -42,6 +44,27 @@ export default function Cart() {
     }).catch(() => {});
     return () => { active = false; };
   }, [items, updateItemPrice]);
+
+  useEffect(() => {
+    let active = true;
+    const urls = [];
+    Promise.all(items.filter((item) => item.pending_upload_id).map(async (item) => {
+      const artwork = await getArtwork(item.pending_upload_id);
+      if (!artwork) return [item.key, null];
+      const url = URL.createObjectURL(artwork);
+      urls.push(url);
+      return [item.key, url];
+    })).then((entries) => {
+      if (active) setLocalArtworkUrls(Object.fromEntries(entries));
+      else urls.forEach((url) => URL.revokeObjectURL(url));
+    }).catch(() => {
+      if (active) setLocalArtworkUrls({});
+    });
+    return () => {
+      active = false;
+      urls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [items]);
 
   const setField = (k) => (e) => setShipping((s) => ({ ...s, [k]: e.target.value }));
 
@@ -67,8 +90,24 @@ export default function Cart() {
           throw new Error("A saved poster is no longer available. Refresh the shop and try again.");
         }
       }
+      const orderItems = [];
+      for (const item of items) {
+        if (!item.pending_upload_id) {
+          orderItems.push(item);
+          continue;
+        }
+        const artwork = await getArtwork(item.pending_upload_id);
+        if (!artwork) throw new Error("A custom poster image is missing from this device. Remove it and add it again.");
+        const form = new FormData();
+        form.append("file", artwork, artwork.name || "custom-poster.png");
+        const { data } = await api.post("/upload", form);
+        if (!data?.path) throw new Error("The custom poster upload did not complete. Please try again.");
+        orderItems.push({ ...item, image_path: data.path, pending_upload_id: null });
+        updateItemImagePath(item.key, data.path);
+        deleteArtwork(item.pending_upload_id).catch(() => {});
+      }
       const payload = {
-        items: items.map((i) => ({
+        items: orderItems.map((i) => ({
           kind: i.kind,
           product_id: i.product_id?.startsWith("local-poster-")
             ? resolvedLegacyIds.get(Number(i.product_id.slice("local-poster-".length)))
@@ -150,6 +189,10 @@ export default function Cart() {
                     {i.image_url ? (
                       <button type="button" onClick={() => setPreview({ src: i.image_url, title: i.title })} className="block w-full cursor-zoom-in" aria-label={`Preview ${i.title}`}>
                         <img src={i.image_url} alt={i.title} className="w-full aspect-[1/1.25] object-cover" />
+                      </button>
+                    ) : localArtworkUrls[i.key] ? (
+                      <button type="button" onClick={() => setPreview({ src: localArtworkUrls[i.key], title: i.title })} className="block w-full cursor-zoom-in" aria-label={`Preview ${i.title}`}>
+                        <img src={localArtworkUrls[i.key]} alt={i.title} className="w-full aspect-[1/1.25] object-cover" />
                       </button>
                     ) : i.image_path ? (
                       <button type="button" onClick={() => setPreview({ src: fileUrl(i.image_path), title: i.title })} className="block w-full cursor-zoom-in" aria-label={`Preview ${i.title}`}>

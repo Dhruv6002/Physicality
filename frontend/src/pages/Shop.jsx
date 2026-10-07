@@ -8,9 +8,9 @@ import { Dialog, DialogContent, DialogTitle } from "../components/ui/dialog";
 
 const SIZES = ["A4", "A3", "A5"];
 const FALLBACK = {
-  posters: { A4: { framed: 254, unframed: 154 }, A3: { framed: 400, unframed: 200 }, A5: { unframed: 81 } },
-  poster_list_prices: { A4: { framed: 363, unframed: 220 }, A3: { framed: 571, unframed: 285 }, A5: { unframed: 116 } },
-  poster_discount_percent: 30,
+  posters: { A4: { framed: 259, unframed: 149 }, A3: { framed: 399, unframed: 179 }, A5: { unframed: 89 } },
+  poster_list_prices: { A4: { framed: 259, unframed: 149 }, A3: { framed: 399, unframed: 179 }, A5: { unframed: 89 } },
+  poster_discount_percent: 0,
 };
 const LOCAL_POSTERS = [
   ["Forza HORIZON 5", "WhatsApp Image 2026-09-14 at 7.59.46 PM.jpeg", "WhatsApp Image 2026-09-14 at 7.59.47 PM.jpeg"],
@@ -56,9 +56,7 @@ function listPriceFor(pricing, size, framing) {
 function PriceTag({ pricing, size, framing, testId }) {
   return (
     <span className="inline-flex flex-wrap items-baseline gap-x-2 gap-y-1" data-testid={testId}>
-      <s className="font-mono-press text-xs text-smoke">₹{listPriceFor(pricing, size, framing)}</s>
       <span className="font-mono-press text-sm text-ink">₹{priceFor(pricing, size, framing)}</span>
-      <span className="font-mono-press text-[9px] uppercase tracking-widest text-terra">{pricing?.poster_discount_percent ?? 30}% off</span>
     </span>
   );
 }

@@ -169,10 +169,13 @@ export default function Cart() {
                     </p>
                     <h3 className="font-serif-press italic text-xl text-ink leading-tight truncate">{i.title}</h3>
                     <p className="font-mono-press text-xs text-smoke mt-1">
-                      {i.list_unit_price > i.unit_price && <s className="mr-2">₹{i.list_unit_price}</s>}
-                      <span>₹{i.unit_price} each</span>
-                      {i.list_unit_price > i.unit_price && <span className="ml-2 text-terra">30% off</span>}
+                      <span>₹{totals.promoOk ? 1 : i.unit_price} each</span>
                     </p>
+                    {totals.freebies?.filter((reward) => reward.key === i.key).map((reward) => (
+                      <p key={i.key} className="mt-1 font-mono-press text-[10px] uppercase tracking-widest text-terra">
+                        + {reward.qty} free poster{reward.qty === 1 ? "" : "s"}
+                      </p>
+                    ))}
                     <div className="flex items-center gap-3 mt-3">
                       <div className="flex border border-ink">
                         <button onClick={() => setQty(i.key, i.qty - 1)} className="px-2 py-1 text-ink hover:bg-paper2" data-testid={`qty-minus-${idx}`} aria-label="Decrease">
@@ -189,8 +192,7 @@ export default function Cart() {
                     </div>
                   </div>
                   <p className="font-mono-press text-sm text-ink shrink-0 text-right">
-                    {i.list_unit_price > i.unit_price && <s className="block text-xs text-smoke">₹{i.list_unit_price * i.qty}</s>}
-                    ₹{i.unit_price * i.qty}
+                    ₹{(totals.promoOk ? 1 : i.unit_price) * i.qty}
                   </p>
                 </div>
               ))}
@@ -239,14 +241,15 @@ export default function Cart() {
                 />
                 {promo && (
                   <p className={`mt-2 font-mono-press text-[10px] uppercase tracking-[0.2em] ${totals.promoOk ? "text-terra" : "text-smoke"}`} data-testid="promo-status">
-                    {totals.promoOk ? "Code accepted — 50% off unframed A4/A3 posters. No tracking number is issued for coded orders." : "Code not recognised"}
+                    {totals.promoOk ? "Code accepted — every item is ₹1." : "Code not recognised"}
                   </p>
                 )}
               </div>
 
               <div className="mt-8 space-y-3 font-mono-press text-sm text-ink border-t border-line pt-5">
                 <div className="flex justify-between"><span className="text-smoke">Subtotal</span><span data-testid="summary-subtotal">₹{totals.subtotal}</span></div>
-                <div className="flex justify-between"><span className="text-smoke">Press-code discount</span><span data-testid="summary-discount" className={totals.discount ? "text-terra" : ""}>−₹{totals.discount}</span></div>
+                <div className="flex justify-between"><span className="text-smoke">Free poster savings</span><span data-testid="summary-offer-discount" className={totals.offerDiscount ? "text-terra" : ""}>−₹{totals.offerDiscount}</span></div>
+                <div className="flex justify-between"><span className="text-smoke">Promo-code discount</span><span data-testid="summary-discount" className={totals.promoDiscount ? "text-terra" : ""}>−₹{totals.promoDiscount}</span></div>
                 <div className="flex justify-between"><span className="text-smoke">Shipping</span><span>On the house</span></div>
                 <div className="flex justify-between text-lg border-t border-ink pt-4"><span>Total</span><span data-testid="summary-total">₹{totals.total}</span></div>
               </div>

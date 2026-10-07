@@ -18,7 +18,7 @@ export function formatApiError(err) {
   }
   if (detail == null) {
     if (err?.code === "ERR_NETWORK" || !err?.response) {
-      return "Could not reach the payment server. Check the backend URL and CORS configuration.";
+      return "Could not reach the API. Check the backend URL, service availability, or network connection.";
     }
     return err?.message || "Something went wrong. Please try again.";
   }

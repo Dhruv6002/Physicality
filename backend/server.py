@@ -52,27 +52,37 @@ api_router = APIRouter(prefix="/api")
 
 JWT_ALGORITHM = "HS256"
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
-PROMO_CODE = "FREEHOSTEL5050"
+PROMO_CODE = "tO+B3Pma):H3*6PSDtsA1Q@Q$b_XFUSy%syzm3Gmh5}iPz&[xR2<FPUDI@(dPW;"
 BASE_POSTER_PRICES = {
     "A4": {"framed": 259, "unframed": 149},
     "A3": {"framed": 399, "unframed": 179},
     "A5": {"unframed": 89},
 }
-POSTER_INCREASES = {"A4": 20, "A3": 40}
-POSTER_DISCOUNT_PERCENT = 30
-POSTER_LIST_PRICES = {
-    size: {
-        framing: ((price + POSTER_INCREASES.get(size, 0)) * 130 + 50) // 100
-        for framing, price in options.items()
-    }
-    for size, options in BASE_POSTER_PRICES.items()
-}
-POSTER_PRICES = {
-    size: {framing: (price * 70 + 50) // 100 for framing, price in options.items()}
-    for size, options in POSTER_LIST_PRICES.items()
-}
+POSTER_DISCOUNT_PERCENT = 0
+POSTER_LIST_PRICES = BASE_POSTER_PRICES
+POSTER_PRICES = BASE_POSTER_PRICES
 COVER_PRICE = 199
 PLATFORMS = ["PlayStation 5", "PlayStation 4", "Xbox", "PC"]
+
+
+def offer_freebie_allocations(items: list[dict]) -> dict[int, int]:
+    groups = [
+        (5, lambda item: item["size"] == "A4" and item["framing"] == "unframed"),
+        (6, lambda item: item["size"] == "A3" and item["framing"] == "unframed"),
+        (6, lambda item: item["size"] in ("A3", "A4") and item["framing"] == "framed"),
+    ]
+    allocations = {}
+    for threshold, matches in groups:
+        eligible = [
+            (index, item) for index, item in enumerate(items)
+            if item.get("kind") in ("poster", "custom") and matches(item)
+        ]
+        count = sum(item["qty"] for _, item in eligible)
+        free_qty = count // threshold
+        if free_qty and eligible:
+            recipient_index, _ = min(eligible, key=lambda pair: pair[1]["unit_price"])
+            allocations[recipient_index] = allocations.get(recipient_index, 0) + free_qty
+    return allocations
 ORDER_STATUSES = ["placed", "packed", "shipped", "delivered"]
 LOCAL_POSTER_SEED = [
     ("Forza HORIZON 5", "WhatsApp Image 2026-09-14 at 7.59.46 PM.jpeg"),
@@ -758,7 +768,7 @@ async def create_order(body: OrderCreate, user: dict = Depends(get_current_user)
         raise HTTPException(status_code=400, detail="Your order is empty")
     promo_applied = False
     if body.promo_code and body.promo_code.strip():
-        if body.promo_code.strip().upper() != PROMO_CODE:
+        if body.promo_code.strip() != PROMO_CODE:
             raise HTTPException(status_code=400, detail="That code is not valid")
         promo_applied = True
 
@@ -773,7 +783,7 @@ async def create_order(body: OrderCreate, user: dict = Depends(get_current_user)
             framing = item.framing if item.framing in ("framed", "unframed") else "unframed"
             if framing not in POSTER_PRICES[item.size]:
                 framing = "unframed"
-            unit = POSTER_PRICES[item.size][framing]
+            unit = 1 if promo_applied else POSTER_PRICES[item.size][framing]
             if item.kind == "poster":
                 if item.product_id:
                     product = await db.products.find_one({"_id": ObjectId(item.product_id)})
@@ -788,29 +798,27 @@ async def create_order(body: OrderCreate, user: dict = Depends(get_current_user)
             else:
                 if not item.image_path:
                     raise HTTPException(status_code=400, detail="Custom posters need an uploaded image")
-                title, game, image_url, image_path = "Custom Commission", "Your artwork", None, item.image_path
+                title, game, image_url, image_path = "Custom poster", "Your artwork", None, item.image_path
             line_items.append({"kind": item.kind, "title": title, "game": game, "size": item.size,
                                "framing": framing, "qty": qty, "unit_price": unit,
                                "image_url": image_url, "image_path": image_path})
         elif item.kind == "cover":
             if not item.game_name or item.platform not in PLATFORMS:
                 raise HTTPException(status_code=400, detail="Cover art needs a game name and platform")
-            unit = COVER_PRICE
+            unit = 1 if promo_applied else COVER_PRICE
             line_items.append({"kind": "cover", "title": f"{item.game_name.strip()} — DVD Cover Box",
                                "game": item.game_name.strip(), "platform": item.platform, "qty": qty,
-                               "unit_price": COVER_PRICE, "includes_free_a5": True})
+                               "unit_price": unit, "includes_free_a5": True})
         else:
             raise HTTPException(status_code=400, detail="Unknown item type")
         line_total = unit * qty
         subtotal += line_total
-        is_eligible_promo_item = (
-            promo_applied and
-            item.kind in ("poster", "custom") and
-            item.size in ("A4", "A3") and
-            framing == "unframed"
-        )
-        if is_eligible_promo_item:
-            discount += line_total // 2
+
+    if not promo_applied:
+        for item_index, free_qty in offer_freebie_allocations(line_items).items():
+            paid_item = line_items[item_index]
+            discount += paid_item["unit_price"] * free_qty
+            line_items.append({**paid_item, "qty": free_qty, "unit_price": 0, "is_free": True})
 
     total = subtotal - discount
     counter = await db.counters.find_one_and_update(
@@ -888,8 +896,8 @@ async def create_razorpay_order(body: dict, user: dict = Depends(get_current_use
         rz_order = rz.order.create({"amount": order["total"] * 100, "currency": "INR",
                                     "payment_capture": 1, "receipt": order["order_no"][:40]})
     except Exception as exc:
-        logger.error("Razorpay order creation failed: %s", exc)
-        raise HTTPException(status_code=502, detail="Razorpay rejected the payment gateway credentials or request")
+        logger.exception("Razorpay order creation failed")
+        raise HTTPException(status_code=502, detail=f"Razorpay error: {str(exc)}")
     await db.orders.update_one({"_id": order["_id"]}, {"$set": {"razorpay_order_id": rz_order["id"]}})
     return {"razorpay_order_id": rz_order["id"], "amount": rz_order["amount"], "currency": "INR",
             "key_id": os.environ.get("RAZORPAY_KEY_ID")}

@@ -1,7 +1,25 @@
 import { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
 
 const CartContext = createContext(null);
-export const PROMO_CODE = "FREEHOSTEL5050";
+export const PROMO_CODE = "tO+B3Pma):H3*6PSDtsA1Q@Q$b_XFUSy%syzm3Gmh5}iPz&[xR2<FPUDI@(dPW;";
+
+export function getOfferFreebies(items) {
+  const groups = [
+    { threshold: 5, matches: (item) => item.size === "A4" && item.framing === "unframed" },
+    { threshold: 6, matches: (item) => item.size === "A3" && item.framing === "unframed" },
+    { threshold: 6, matches: (item) => ["A3", "A4"].includes(item.size) && item.framing === "framed" },
+  ];
+  const rewards = [];
+  for (const group of groups) {
+    const eligible = items.filter((item) =>
+      (item.kind === "poster" || item.kind === "custom") && group.matches(item));
+    const freeQty = Math.floor(eligible.reduce((sum, item) => sum + item.qty, 0) / group.threshold);
+    if (!freeQty) continue;
+    const recipient = [...eligible].sort((left, right) => left.unit_price - right.unit_price)[0];
+    rewards.push({ key: recipient.key, qty: freeQty, amount: recipient.unit_price * freeQty });
+  }
+  return rewards;
+}
 
 function load() {
   try { return JSON.parse(localStorage.getItem("pe_cart")) || []; } catch { return []; }
@@ -35,17 +53,12 @@ export function CartProvider({ children }) {
 
   const totals = useMemo(() => {
     const subtotal = items.reduce((s, i) => s + i.unit_price * i.qty, 0);
-    const promoOk = promo.trim().toUpperCase() === PROMO_CODE;
-    const discount = promoOk
-      ? items.reduce((s, i) => {
-          const isEligiblePromoItem =
-            (i.kind === "poster" || i.kind === "custom") &&
-            (i.size === "A4" || i.size === "A3") &&
-            (i.framing === "unframed" || (i.framing == null && i.size === "A4" || i.size === "A3"));
-          return s + (isEligiblePromoItem ? Math.floor((i.unit_price * i.qty) / 2) : 0);
-        }, 0)
-      : 0;
-    return { subtotal, discount, total: subtotal - discount, promoOk };
+    const promoOk = promo.trim() === PROMO_CODE;
+    const promoDiscount = promoOk ? subtotal - items.reduce((sum, item) => sum + item.qty, 0) : 0;
+    const freebies = promoOk ? [] : getOfferFreebies(items);
+    const offerDiscount = freebies.reduce((sum, reward) => sum + reward.amount, 0);
+    const discount = promoDiscount + offerDiscount;
+    return { subtotal, discount, promoDiscount, offerDiscount, total: subtotal - discount, promoOk, freebies };
   }, [items, promo]);
 
   const count = useMemo(() => items.reduce((s, i) => s + i.qty, 0), [items]);

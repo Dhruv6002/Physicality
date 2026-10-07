@@ -44,9 +44,9 @@ export default function OurStory() {
       </header>
 
       <section className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-        {highlights.map((item) => (
+        {highlights.map((item, index) => (
           <div key={item.title} className="border border-ink bg-paper p-6 md:p-8">
-            <p className="font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke">01</p>
+            <p className="font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke">{String(index + 1).padStart(2, "0")}</p>
             <h2 className="mt-4 font-serif-press text-3xl text-ink">{item.title}</h2>
             <p className="mt-3 text-sm leading-relaxed text-smoke">{item.body}</p>
           </div>

@@ -19,7 +19,10 @@ export default function CustomPoster() {
   const [fileName, setFileName] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError, setUploadError] = useState("");
   const inputRef = useRef(null);
+  const uploadControllerRef = useRef(null);
+  const selectedFileRef = useRef(null);
 
   useEffect(() => {
     api.get("/pricing").then(({ data }) => setPricing(data.posters)).catch(() => {});
@@ -27,8 +30,46 @@ export default function CustomPoster() {
 
   const price = pricing[size]?.[framing] ?? pricing[size]?.unframed;
 
+  const uploadArtwork = async (file) => {
+    const controller = new AbortController();
+    uploadControllerRef.current = controller;
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const { data } = await api.post("/upload", form, {
+        signal: controller.signal,
+        onUploadProgress: (event) => {
+          if (event.total) setUploadProgress(Math.round((event.loaded / event.total) * 100));
+        },
+      });
+      if (controller.signal.aborted) return;
+      if (!data?.path) throw new Error("The upload completed without a file path. Please retry.");
+      setImagePath(data.path);
+      setUploadError("");
+      setUploadProgress(100);
+      toast.success("Artwork received by the press");
+      return data.path;
+    } catch (e) {
+      if (e?.code !== "ERR_CANCELED") {
+        const isNetworkError = e?.code === "ERR_NETWORK" || !e?.response;
+        setUploadError(isNetworkError
+          ? "Upload did not finish. We will retry when you add it to your cart."
+          : formatApiError(e));
+      }
+      return null;
+    } finally {
+      if (uploadControllerRef.current === controller) {
+        uploadControllerRef.current = null;
+        setUploading(false);
+        if (inputRef.current) inputRef.current.value = "";
+      }
+    }
+  };
+
   const onFile = async (file) => {
     if (!file) return;
+    uploadControllerRef.current?.abort();
     const extension = file.name?.split(".").pop()?.toLowerCase();
     const supportedExtensions = ["jpg", "jpeg", "png", "webp"];
     const supportedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -42,50 +83,45 @@ export default function CustomPoster() {
     }
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     const localPreview = URL.createObjectURL(file);
+    selectedFileRef.current = file;
     setPreviewUrl(localPreview);
     setDimensions(null);
     setImagePath(null);
+    setUploadError("");
     setFileName(file.name);
     setUploadProgress(0);
     const image = new Image();
     image.onload = () => setDimensions({ width: image.naturalWidth, height: image.naturalHeight });
     image.src = localPreview;
-    setUploading(true);
-    try {
-      const form = new FormData();
-      form.append("file", file);
-      const { data } = await api.post("/upload", form, {
-        onUploadProgress: (event) => {
-          if (event.total) setUploadProgress(Math.round((event.loaded / event.total) * 100));
-        },
-      });
-      setImagePath(data.path);
-      setUploadProgress(100);
-      toast.success("Artwork received by the press");
-    } catch (e) {
-      toast.error(formatApiError(e));
-    } finally {
-      setUploading(false);
-      if (inputRef.current) inputRef.current.value = "";
-    }
+    await uploadArtwork(file);
   };
 
   useEffect(() => () => {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
   }, [previewUrl]);
 
-  const add = () => {
-    if (!imagePath) { toast.error("Upload your artwork first"); return; }
-    addItem({ kind: "custom", title: "Custom Commission", game: fileName || "Your artwork", size, framing, unit_price: price, qty: 1, image_path: imagePath });
+  const add = async () => {
+    if (!imagePath && !selectedFileRef.current) {
+      toast.error("Choose an artwork image first");
+      return;
+    }
+    const uploadedPath = imagePath || await uploadArtwork(selectedFileRef.current);
+    if (!uploadedPath) return;
+    addItem({ kind: "custom", title: "Custom poster", game: fileName || "Your artwork", size, framing, unit_price: price, qty: 1, image_path: uploadedPath });
     toast.success(`Custom print · ${size} ${framing} — added to your cart`);
   };
 
   const removeArtwork = (event) => {
+    event.preventDefault();
     event.stopPropagation();
-    if (uploading) return;
+    uploadControllerRef.current?.abort();
+    uploadControllerRef.current = null;
+    setUploading(false);
+    selectedFileRef.current = null;
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
     setImagePath(null);
+    setUploadError("");
     setDimensions(null);
     setFileName("");
     setUploadProgress(0);
@@ -94,7 +130,7 @@ export default function CustomPoster() {
 
   return (
     <div className="mx-auto max-w-7xl px-5 md:px-8 py-16 md:py-24" data-testid="custom-poster-page">
-      <SectionHeading title={<>A custom <span className="italic">commission</span></>} className="mb-14" />
+      <SectionHeading title="Custom poster" className="mb-14" />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
         <Reveal>
           <div
@@ -109,7 +145,6 @@ export default function CustomPoster() {
                 <button
                   type="button"
                   onClick={removeArtwork}
-                  disabled={uploading}
                   aria-label="Remove uploaded artwork"
                   data-testid="remove-artwork-button"
                   className="absolute top-3 right-3 grid place-items-center w-9 h-9 bg-paper border border-ink text-ink hover:bg-terra hover:text-paper transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -174,10 +209,12 @@ export default function CustomPoster() {
                   const disabled = size === "A5" && f === "framed";
                   return (
                     <button
+                      type="button"
                       key={f}
                       disabled={disabled}
                       onClick={() => setFraming(f)}
                       data-testid={`custom-framing-${f}`}
+                      aria-pressed={framing === f}
                       className={`px-6 py-3 font-mono-press text-xs uppercase tracking-widest transition-colors ${
                         framing === f ? "bg-ink text-paper" : disabled ? "text-smoke/40 cursor-not-allowed" : "text-ink hover:bg-paper2"
                       }`}
@@ -189,7 +226,9 @@ export default function CustomPoster() {
               </div>
             </div>
           </div>
-          <div className="mt-auto pt-10 flex items-center justify-between border-t border-line">
+          <div className="mt-auto pt-10 border-t border-line">
+            {uploadError && <p role="status" data-testid="artwork-upload-status" className="mb-4 text-sm text-smoke">{uploadError}</p>}
+            <div className="flex items-center justify-between">
             <span className="font-mono-press text-lg text-ink" data-testid="custom-price">₹{price}</span>
             <button
               onClick={add}
@@ -197,8 +236,9 @@ export default function CustomPoster() {
               data-testid="custom-add-to-cart-button"
               className="bg-terra text-paper px-6 py-3 font-mono-press text-xs uppercase tracking-widest hover:bg-terra-dark transition-colors disabled:opacity-50"
             >
-              Add to cart
+              {uploading ? "Uploading artwork…" : "Add to cart"}
             </button>
+            </div>
           </div>
         </Reveal>
       </div>

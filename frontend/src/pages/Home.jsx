@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import Marquee from "react-fast-marquee";
 import { ArrowRight } from "lucide-react";
-import { MaskedLines, Reveal } from "../components/Motion";
+import { Reveal } from "../components/Motion";
 
 const GAMES = [
   "Forza HORIZON 5",
@@ -32,67 +32,47 @@ const STEPS = [
 export default function Home() {
   return (
     <div data-testid="home-page">
-      {/* MASTHEAD RULE */}
-      <div className="border-b border-ink" data-testid="masthead-bar">
-        <div className="mx-auto max-w-7xl px-5 md:px-8 py-3 flex items-center justify-between font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke">
-          <span>Physical editions for game collectors</span>
-          <span className="hidden md:inline">Printed in India</span>
-        </div>
-      </div>
-
       {/* HERO */}
       <section className="border-b border-ink" data-testid="hero-section">
-        <div className="mx-auto max-w-7xl px-5 md:px-8 pt-14 md:pt-20 pb-20 md:pb-28 grid grid-cols-1 lg:grid-cols-12 gap-12">
-          <div className="lg:col-span-8">
+        <div className="mx-auto max-w-7xl px-5 md:px-8 py-8 md:py-12 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 items-center">
+          <div className="overflow-hidden border border-ink bg-ink aspect-[16/9]">
+            <img
+              src="/images/WhatsApp%20Image%202026-10-07%20at%208.59.58%20PM.jpeg"
+              alt="Physicality poster collection and current poster offers"
+              className="block w-full h-full object-cover"
+              fetchPriority="high"
+            />
+          </div>
+          <div className="py-4 lg:py-8">
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.15, duration: 0.8 }}
-              className="font-mono-press text-xs uppercase tracking-[0.2em] text-terra mb-8"
+              className="font-mono-press text-xs uppercase tracking-[0.2em] text-ink font-bold mb-5"
               data-testid="hero-eyebrow"
             >
-              ✦ A physical games press
+              Physical editions for game collectors
             </motion.p>
-            <MaskedLines
-              lines={[
-                <>The archive</>,
-                <>for players</>,
-                <>who still</>,
-                <><span className="italic text-terra">collect.</span></>,
-              ]}
-              className="font-serif-press text-6xl sm:text-7xl lg:text-8xl tracking-tighter leading-[0.95] text-ink"
-              data-testid="hero-heading"
-            />
-          </div>
-          <div className="lg:col-span-4 flex flex-col justify-end">
-            <motion.div
+            <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.9, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ delay: 0.2, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+              className="font-serif-press text-5xl sm:text-6xl xl:text-7xl leading-[0.98] text-ink"
+              data-testid="hero-heading"
             >
-              <p className="text-base text-smoke leading-relaxed max-w-sm">
-                Publishers went digital. Shelves went empty. We print the missing pieces —
-                curator-grade game posters and boxed cover-art for PlayStation 5, PlayStation 4, Xbox and PC.
-              </p>
-              <div className="mt-8 flex flex-col gap-3 max-w-sm">
-                <Link
-                  to="/shop"
-                  data-testid="hero-poster-catalog-button"
-                  className="group flex items-center justify-between bg-ink text-paper px-6 py-4 font-mono-press text-xs uppercase tracking-[0.2em] hover:bg-terra transition-colors"
-                >
-                  Poster catalog
-                  <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
-                </Link>
-                <Link
-                  to="/cover-art"
-                  data-testid="hero-cover-box-button"
-                  className="group flex items-center justify-between border border-ink text-ink px-6 py-4 font-mono-press text-xs uppercase tracking-[0.2em] hover:bg-ink hover:text-paper transition-colors"
-                >
-                  DVD cover box
-                  <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
-                </Link>
-              </div>
-            </motion.div>
+              A new era<br />of posters<br /><span className="italic">Physicality.</span>
+            </motion.h1>
+            <p className="mt-6 max-w-md text-base text-smoke leading-relaxed">
+              Bring the worlds you love off the screen and onto your walls, printed for collectors.
+            </p>
+            <Link
+              to="/shop"
+              data-testid="hero-poster-catalog-button"
+              className="group mt-8 inline-flex items-center justify-between gap-8 bg-ink text-paper px-6 py-4 font-mono-press text-xs uppercase tracking-[0.2em] hover:bg-terra transition-colors"
+            >
+              Shop now
+              <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+            </Link>
           </div>
         </div>
       </section>
@@ -103,7 +83,7 @@ export default function Home() {
           {GAMES.map((g, i) => (
             <span key={i} className="flex items-center">
               <span className="font-serif-press italic text-2xl md:text-3xl text-paper mx-5">{g}</span>
-              <span className="text-terra text-lg">✦</span>
+              <span className="text-paper text-lg font-bold">✦</span>
             </span>
           ))}
         </Marquee>
@@ -144,7 +124,7 @@ export default function Home() {
       <section className="border-b border-ink" data-testid="process-section">
         <div className="mx-auto max-w-7xl px-5 md:px-8 py-24 md:py-32">
           <Reveal>
-            <p className="font-mono-press text-xs uppercase tracking-[0.2em] text-terra mb-6">✦ The process</p>
+            <p className="font-mono-press text-xs uppercase tracking-[0.2em] text-ink font-bold mb-6">✦ The process</p>
             <h2 className="font-serif-press text-4xl md:text-6xl tracking-tight leading-[1.02] text-ink max-w-3xl">
               Choose, customise, <span className="italic">delivered.</span>
             </h2>
@@ -156,7 +136,7 @@ export default function Home() {
           <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-10">
             {STEPS.map((s, i) => (
               <Reveal key={s.num} delay={i * 0.12} className="border-t border-ink pt-6">
-                <p className="font-display-press text-4xl text-terra">{s.num}</p>
+                <p className="font-display-press text-4xl text-ink font-bold">{s.num}</p>
                 <h3 className="font-serif-press text-2xl text-ink mt-4 tracking-tight">{s.title}</h3>
                 <p className="mt-3 text-sm text-smoke leading-relaxed">{s.body}</p>
               </Reveal>

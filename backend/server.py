@@ -896,9 +896,13 @@ async def create_razorpay_order(body: dict, user: dict = Depends(get_current_use
     if not rz:
         raise HTTPException(status_code=503, detail="Payment gateway is not configured yet")
     order = await get_payable_order(body.get("order_id", ""), user)
+    razorpay_order_id = order.get("razorpay_order_id")
+    if razorpay_order_id:
+        return {"razorpay_order_id": razorpay_order_id, "amount": order["total"] * 100, "currency": "INR",
+                "key_id": os.environ.get("RAZORPAY_KEY_ID", "").strip()}
     try:
         rz_order = rz.order.create({"amount": order["total"] * 100, "currency": "INR",
-                                    "payment_capture": 1, "receipt": order["order_no"][:40]})
+                                    "receipt": order["order_no"][:40]})
     except Exception as exc:
         logger.exception("Razorpay order creation failed")
         await db.orders.delete_one({

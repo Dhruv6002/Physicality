@@ -57,7 +57,9 @@ export default function Auth() {
         size: "large",
         text: "continue_with",
         shape: "rect",
-        width: Math.min(400, Math.floor(googleButtonRef.current.getBoundingClientRect().width || 400)),
+        width: Math.min(360, Math.floor(
+          googleButtonRef.current.parentElement?.getBoundingClientRect().width || 360
+        )),
       });
       setGoogleReady(true);
     };
@@ -123,7 +125,7 @@ export default function Auth() {
       <SectionHeading title={mode === "login" ? <>Sign <span className="italic">in</span></> : <>Open an <span className="italic">account</span></>} className="mb-12" />
 
       <Reveal>
-        <div className="mx-auto w-full max-w-[400px]">
+        <div className="mx-auto w-full max-w-[360px]">
           {!googleReady && (
             <button
               type="button"

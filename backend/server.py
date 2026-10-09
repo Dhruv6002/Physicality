@@ -49,6 +49,12 @@ db = client[os.environ['DB_NAME']]
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
+EMERGENT_KEY = os.environ.get("EMERGENT_LLM_KEY", "")
+STORAGE_URL = os.environ.get("STORAGE_URL", "")
+APP_NAME = "physicality"
+UPLOAD_DIR = Path(__file__).resolve().parent / "uploads"
+storage_key: Optional[str] = None
+storage_enabled = False
 
 JWT_ALGORITHM = "HS256"
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
@@ -108,7 +114,6 @@ LOCAL_POSTER_SEED = [
     ("Uncharted 4: A Thief's End", "WhatsApp Image 2026-09-19 at 3.50.12 PM (2).jpeg"),
     ("The Last of Us Part 2", "WhatsApp Image 2026-09-19 at 4.15.37 PM.jpeg"),
 ]
-storage_enabled = False
 
 MIME_TYPES = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp"}
 
@@ -120,6 +125,9 @@ def init_storage(force: bool = False):
     if not EMERGENT_KEY:
         storage_enabled = False
         return None
+    if not STORAGE_URL:
+        storage_enabled = False
+        raise RuntimeError("STORAGE_URL is required when EMERGENT_LLM_KEY is configured")
     resp = http_requests.post(f"{STORAGE_URL}/init", json={"emergent_key": EMERGENT_KEY}, timeout=30)
     resp.raise_for_status()
     storage_key = resp.json()["storage_key"]
@@ -681,6 +689,7 @@ async def upload(file: UploadFile = File(...), user: Optional[dict] = Depends(ge
     else:
         driver = "local"
     if driver == "local":
+        UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
         (UPLOAD_DIR / path.replace("/", "_")).write_bytes(data)
     await db.files.insert_one({
         "storage_path": path, "original_filename": file.filename, "content_type": content_type,
@@ -858,12 +867,32 @@ async def track_order(order_no: str = Query(..., min_length=3), email: str = Que
 
 
 # ---------- Payments (Razorpay) ----------
+def razorpay_credentials() -> tuple[str, str]:
+    return (
+        os.environ.get("RAZORPAY_KEY_ID", "").strip(),
+        os.environ.get("RAZORPAY_KEY_SECRET", "").strip(),
+    )
+
+
 def razorpay_client():
-    key = os.environ.get("RAZORPAY_KEY_ID", "").strip()
-    secret = os.environ.get("RAZORPAY_KEY_SECRET", "").strip()
+    key, secret = razorpay_credentials()
     if not key or not secret or razorpay is None:
         return None
     return razorpay.Client(auth=(key, secret))
+
+
+def sanitized_razorpay_error(exc: Exception, key: str, secret: str) -> str:
+    message = str(exc)
+    for credential in (key, secret):
+        if credential:
+            message = message.replace(credential, "[REDACTED]")
+    message = re.sub(
+        r"(?i)(authorization|key[_ -]?(?:id|secret)|secret|password|token)\s*[:=]\s*"
+        r"(['\"]?)[^\s,'\"}]+",
+        r"\1=[REDACTED]",
+        message,
+    )
+    return message[:500] or "<empty>"
 
 
 def mock_payments_enabled() -> bool:
@@ -872,7 +901,7 @@ def mock_payments_enabled() -> bool:
 
 @api_router.get("/payments/config")
 async def payments_config():
-    key = os.environ.get("RAZORPAY_KEY_ID", "").strip()
+    key, secret = razorpay_credentials()
     configured = bool(razorpay_client())
     return {
         "configured": configured,
@@ -904,7 +933,16 @@ async def create_razorpay_order(body: dict, user: dict = Depends(get_current_use
         rz_order = rz.order.create({"amount": order["total"] * 100, "currency": "INR",
                                     "receipt": order["order_no"][:40]})
     except Exception as exc:
-        logger.exception("Razorpay order creation failed")
+        key, secret = razorpay_credentials()
+        logger.error(
+            "Razorpay order creation failed: key_id_present=%s key_secret_present=%s "
+            "key_id_prefix=%s error_type=%s error_response=%s",
+            bool(key),
+            bool(secret),
+            key[:12] if key else "<empty>",
+            type(exc).__name__,
+            sanitized_razorpay_error(exc, key, secret),
+        )
         await db.orders.delete_one({
             "_id": order["_id"],
             "payment_status": "pending",

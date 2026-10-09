@@ -41,7 +41,7 @@ export default function CoverArt() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
         <Reveal className="relative">
           <div className="relative border border-ink">
-            <img src={DVD_CASE_IMAGE} alt="A DVD box awaiting its cover art" className="w-full aspect-square object-cover" />
+            <img src={DVD_CASE_IMAGE} alt="A DVD box awaiting its cover art" fetchPriority="high" decoding="async" className="w-full aspect-square object-cover" />
           </div>
           <div className="mt-4 border border-terra bg-paper2 p-5 flex items-start gap-4">
             <Gift size={20} className="text-terra shrink-0 mt-0.5" />

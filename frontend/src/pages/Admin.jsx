@@ -162,21 +162,28 @@ export default function Admin() {
   const [edits, setEdits] = useState({});
   const [saving, setSaving] = useState("");
   const [fetching, setFetching] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     if (!loading && (!user || user.role !== "admin")) navigate("/");
   }, [user, loading, navigate]);
 
-  const load = () => {
-    api.get("/admin/orders")
-      .then(({ data }) => {
-        setOrders(data);
-        const e = {};
-        data.forEach((o) => { e[o.id] = { status: o.status, tracking_id: o.tracking_id || "", courier: o.courier || "", delivery_option: o.delivery_option || "", tracking_url: o.tracking_url || "" }; });
-        setEdits(e);
-      })
-      .catch((err) => toast.error(formatApiError(err)))
-      .finally(() => setFetching(false));
+  const load = async () => {
+    setFetching(true);
+    setLoadError("");
+    try {
+      const { data } = await api.get("/admin/orders");
+      setOrders(data);
+      const e = {};
+      data.forEach((o) => { e[o.id] = { status: o.status, tracking_id: o.tracking_id || "", courier: o.courier || "", delivery_option: o.delivery_option || "", tracking_url: o.tracking_url || "" }; });
+      setEdits(e);
+    } catch (err) {
+      const message = formatApiError(err);
+      setLoadError(message);
+      toast.error(message);
+    } finally {
+      setFetching(false);
+    }
   };
 
   useEffect(() => {
@@ -229,8 +236,22 @@ export default function Admin() {
             ))}
           </div>
 
-          {fetching ? (
+          {loadError && (
+            <div className="border border-terra p-5 mb-6 flex items-center justify-between gap-4" role="alert">
+              <p className="font-mono-press text-xs text-ink">{loadError}</p>
+              <button onClick={load} disabled={fetching} className="bg-ink text-paper px-4 py-2 font-mono-press text-[10px] uppercase tracking-widest disabled:opacity-50">
+                {fetching ? "Loading…" : "Retry"}
+              </button>
+            </div>
+          )}
+
+          {fetching && orders.length === 0 ? (
             <p className="font-mono-press text-xs uppercase tracking-[0.2em] text-smoke">Loading orders…</p>
+          ) : loadError && orders.length === 0 ? (
+            <div className="border border-line p-16 text-center" data-testid="admin-orders-error">
+              <p className="font-serif-press italic text-3xl text-ink">Orders could not be loaded.</p>
+              <p className="font-mono-press text-xs text-smoke mt-3">Your saved order data has not been cleared.</p>
+            </div>
           ) : orders.length === 0 ? (
             <div className="border border-line p-16 text-center" data-testid="admin-no-orders">
               <p className="font-serif-press italic text-3xl text-ink">No orders yet.</p>

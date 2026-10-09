@@ -1,7 +1,11 @@
 import axios from "axios";
 
-const backendUrl = process.env.REACT_APP_BACKEND_URL || "http://localhost:8000";
-export const API = `${backendUrl}/api`;
+const backendUrl =
+  process.env.REACT_APP_BACKEND_URL ||
+  (process.env.NODE_ENV === "production"
+    ? "https://physicality.onrender.com"
+    : "http://localhost:8000");
+export const API = `${backendUrl.replace(/\/+$/, "")}/api`;
 
 const api = axios.create({ baseURL: API, withCredentials: true });
 

@@ -12,7 +12,7 @@ import ipaddress
 import re
 from html import escape
 from html.parser import HTMLParser
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 
 import bcrypt
 import httpx
@@ -360,7 +360,7 @@ def tracking_url(tracking_id: Optional[str], courier: Optional[str]) -> Optional
     if not tracking_id or not courier:
         return None
     key = courier.strip().lower().replace(" ", "")
-    encoded_id = httpx.URL("https://tracking.invalid/").copy_with(path=tracking_id).path.lstrip("/")
+    encoded_id = quote(tracking_id, safe="")
     if key == "delhivery":
         return f"https://www.delhivery.com/track/package/{encoded_id}"
     if key == "indiapost":

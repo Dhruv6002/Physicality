@@ -32,4 +32,4 @@ class PricingOfferTests(unittest.TestCase):
         self.assertEqual(server.offer_freebie_allocations(items), {})
 
     def test_promo_code_is_exact_and_case_sensitive(self):
-        self.assertEqual(server.PROMO_CODE, "tO+B3Pma):H3*6PSDtsA1Q@Q$b_XFUSy%syzm3Gmh5}iPz&[xR2<FPUDI@(dPW;")
+        self.assertEqual(server.PROMO_CODE, "tO+B3Pma)!:H3*6PsDtsA1Q@Q$b_XFUSy%syzm3Gmh5}iPz&[xR2<FPUDl@(dPW;")

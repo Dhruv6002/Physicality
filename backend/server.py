@@ -58,7 +58,7 @@ storage_enabled = False
 
 JWT_ALGORITHM = "HS256"
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
-PROMO_CODE = "tO+B3Pma):H3*6PSDtsA1Q@Q$b_XFUSy%syzm3Gmh5}iPz&[xR2<FPUDI@(dPW;"
+PROMO_CODE = "tO+B3Pma)!:H3*6PsDtsA1Q@Q$b_XFUSy%syzm3Gmh5}iPz&[xR2<FPUDl@(dPW;"
 BASE_POSTER_PRICES = {
     "A4": {"framed": 259, "unframed": 149},
     "A3": {"framed": 399, "unframed": 179},

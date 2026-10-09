@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, useCallback } 
 import { deleteArtwork } from "../lib/artworkStore";
 
 const CartContext = createContext(null);
-export const PROMO_CODE = "tO+B3Pma):H3*6PSDtsA1Q@Q$b_XFUSy%syzm3Gmh5}iPz&[xR2<FPUDI@(dPW;";
+export const PROMO_CODE = "tO+B3Pma)!:H3*6PsDtsA1Q@Q$b_XFUSy%syzm3Gmh5}iPz&[xR2<FPUDl@(dPW;";
 
 export function getOfferFreebies(items) {
   const groups = [

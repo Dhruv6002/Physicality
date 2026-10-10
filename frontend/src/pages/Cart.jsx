@@ -212,7 +212,7 @@ export default function Cart() {
                     </p>
                     {totals.freebies?.filter((reward) => reward.key === i.key).map((reward) => (
                       <p key={i.key} className="mt-1 font-mono-press text-[10px] uppercase tracking-widest text-terra">
-                        + {reward.qty} free poster{reward.qty === 1 ? "" : "s"}
+                        + {reward.qty} free poster{reward.qty === 1 ? "" : "s"} — save ₹{reward.amount}
                       </p>
                     ))}
                     <div className="flex items-center gap-3 mt-3">
@@ -287,7 +287,7 @@ export default function Cart() {
 
               <div className="mt-8 space-y-3 font-mono-press text-sm text-ink border-t border-line pt-5">
                 <div className="flex justify-between"><span className="text-smoke">Subtotal</span><span data-testid="summary-subtotal">₹{totals.subtotal}</span></div>
-                <div className="flex justify-between"><span className="text-smoke">Free poster savings</span><span data-testid="summary-offer-discount" className={totals.offerDiscount ? "text-terra" : ""}>−₹{totals.offerDiscount}</span></div>
+                <div className="flex justify-between"><span className="text-smoke">Free poster savings</span><span data-testid="summary-offer-discount" className={totals.offerDiscount ? "text-terra" : ""}>{totals.offerDiscount ? `−₹${totals.offerDiscount}` : "₹0"}</span></div>
                 <div className="flex justify-between"><span className="text-smoke">Promo-code discount</span><span data-testid="summary-discount" className={totals.promoDiscount ? "text-terra" : ""}>−₹{totals.promoDiscount}</span></div>
                 <div className="flex justify-between"><span className="text-smoke">Shipping</span><span>On the house</span></div>
                 <div className="flex justify-between text-lg border-t border-ink pt-4"><span>Total</span><span data-testid="summary-total">₹{totals.total}</span></div>

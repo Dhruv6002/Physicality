@@ -39,6 +39,24 @@ function load() {
   try { return JSON.parse(localStorage.getItem("pe_cart")) || []; } catch { return []; }
 }
 
+export function calculateCartTotals(items, promo) {
+  const subtotal = items.reduce((sum, item) => sum + item.unit_price * item.qty, 0);
+  const promoOk = promo.trim() === PROMO_CODE;
+  const promoDiscount = promoOk ? subtotal - items.reduce((sum, item) => sum + item.qty, 0) : 0;
+  const freebies = promoOk ? [] : getOfferFreebies(items);
+  const offerDiscount = freebies.reduce((sum, reward) => sum + reward.amount, 0);
+  const discount = promoDiscount + offerDiscount;
+  return {
+    subtotal,
+    discount,
+    promoDiscount,
+    offerDiscount,
+    total: subtotal - discount,
+    promoOk,
+    freebies,
+  };
+}
+
 export function CartProvider({ children }) {
   const [items, setItems] = useState(load);
   const [promo, setPromo] = useState(localStorage.getItem("pe_promo") || "");
@@ -80,15 +98,7 @@ export function CartProvider({ children }) {
     setPromo("");
   }, [items]);
 
-  const totals = useMemo(() => {
-    const subtotal = items.reduce((s, i) => s + i.unit_price * i.qty, 0);
-    const promoOk = promo.trim() === PROMO_CODE;
-    const promoDiscount = promoOk ? subtotal - items.reduce((sum, item) => sum + item.qty, 0) : 0;
-    const freebies = promoOk ? [] : getOfferFreebies(items);
-    const offerDiscount = freebies.reduce((sum, reward) => sum + reward.amount, 0);
-    const discount = promoDiscount + offerDiscount;
-    return { subtotal, discount, promoDiscount, offerDiscount, total: subtotal - discount, promoOk, freebies };
-  }, [items, promo]);
+  const totals = useMemo(() => calculateCartTotals(items, promo), [items, promo]);
 
   const count = useMemo(() => items.reduce((s, i) => s + i.qty, 0), [items]);
 

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Trash2, UploadCloud } from "lucide-react";
-import api, { formatApiError, productImage } from "../lib/api";
+import api, { fileUrl, formatApiError, productImage } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { SectionHeading } from "../components/Motion";
 
@@ -290,9 +290,19 @@ export default function Admin() {
                       <td className="px-4 py-4 max-w-[220px]">
                         <ul className="space-y-1">
                           {o.items.map((i, k) => (
-                            <li key={k} className="text-xs text-smoke leading-snug">
-                              <span className="text-ink">{i.title}</span>
-                              <span className="font-mono-press text-[10px]"> · {i.kind === "cover" ? `${i.platform} · +A5 free` : `${i.size}${i.framing ? ` ${i.framing}` : ""}`} × {i.qty}</span>
+                            <li key={k} className="flex items-start gap-2 text-xs text-smoke leading-snug">
+                              {i.kind === "custom" && i.image_path && (
+                                <img
+                                  src={fileUrl(i.image_path)}
+                                  alt="Customer's custom poster artwork"
+                                  className="w-12 h-16 shrink-0 border border-line object-cover"
+                                  data-testid={`custom-artwork-${o.order_no}-${k}`}
+                                />
+                              )}
+                              <span>
+                                <span className="text-ink">{i.title}</span>
+                                <span className="font-mono-press text-[10px]"> · {i.kind === "cover" ? `${i.platform} · +A5 free` : `${i.size}${i.framing ? ` ${i.framing}` : ""}`} × {i.qty}</span>
+                              </span>
                             </li>
                           ))}
                         </ul>

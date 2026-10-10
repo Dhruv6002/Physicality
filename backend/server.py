@@ -83,11 +83,13 @@ def offer_freebie_allocations(items: list[dict]) -> dict[int, int]:
             (index, item) for index, item in enumerate(items)
             if item.get("kind") in ("poster", "custom") and matches(item)
         ]
-        count = sum(item["qty"] for _, item in eligible)
-        free_qty = count // threshold
-        if free_qty and eligible:
-            recipient_index, _ = min(eligible, key=lambda pair: pair[1]["unit_price"])
-            allocations[recipient_index] = allocations.get(recipient_index, 0) + free_qty
+        eligible_count = 0
+        for recipient_index, item in eligible:
+            free_qty = ((eligible_count + item["qty"]) // threshold
+                        - eligible_count // threshold)
+            if free_qty:
+                allocations[recipient_index] = allocations.get(recipient_index, 0) + free_qty
+            eligible_count += item["qty"]
     return allocations
 ORDER_STATUSES = ["placed", "packed", "shipped", "delivered"]
 LOCAL_POSTER_SEED = [
@@ -262,11 +264,20 @@ def status_email_html(order: dict, new_status: str) -> str:
         f'{escape(str(i.get("size") or i.get("platform") or ""))} &times; {i["qty"]}</span></td></tr>'
         for i in order.get("items", []))
     tracking = ""
-    if new_status in ("shipped", "delivered") and not order.get("promo_applied") and order.get("tracking_id"):
+    if new_status in ("shipped", "delivered") and any(
+        order.get(field) for field in ("tracking_id", "courier", "tracking_url", "delivery_option")
+    ):
         delivery_option = f' <span style="color:#5C5A56">Delivery option &middot; {escape(order["delivery_option"])}</span>' if order.get("delivery_option") else ""
         courier = f' &mdash; {escape(order["courier"]) }' if order.get("courier") else ""
+        tracking_id = escape(order.get("tracking_id") or "")
+        tracking_link = order.get("tracking_url")
+        if tracking_link:
+            tracking_text = f'<a href="{escape(tracking_link, quote=True)}" style="color:#1C1C1A">{tracking_id or "Track shipment"}</a>'
+        else:
+            tracking_text = f"<strong>{tracking_id}</strong>" if tracking_id else ""
+        tracking_content = f"Tracking &middot; {tracking_text}" if tracking_text else ""
         tracking = (f'<p style="font-family:Arial,sans-serif;font-size:13px;color:#1C1C1A;margin:20px 0 0">'
-                    f'Tracking &middot; <strong>{escape(order["tracking_id"])}</strong>{courier}{delivery_option}</p>')
+                    f'{tracking_content}{courier}{delivery_option}</p>')
     name = escape(order.get("shipping", {}).get("name", "collector").split(" ")[0])
     return (
         '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#EAE4D9;padding:32px 16px">'
@@ -850,7 +861,7 @@ async def create_order(body: OrderCreate, user: dict = Depends(get_current_user)
 @api_router.get("/orders")
 async def my_orders(user: dict = Depends(get_current_user)):
     docs = await db.orders.find({"user_id": str(user["_id"]), "payment_status": "paid"}).sort("created_at", -1).to_list(200)
-    return [order_response(d, include_tracking=not d.get("promo_applied", False)) for d in docs]
+    return [order_response(d) for d in docs]
 
 
 @api_router.get("/orders/track")
@@ -862,7 +873,7 @@ async def track_order(order_no: str = Query(..., min_length=3), email: str = Que
     })
     if not order:
         raise HTTPException(status_code=404, detail="We could not find an order with those details")
-    response = order_response(order, include_tracking=not order.get("promo_applied", False))
+    response = order_response(order)
     return {key: response[key] for key in ("order_no", "status", "status_history", "delivery_option", "tracking_id", "courier", "tracking_url", "created_at") if key in response}
 
 
@@ -1057,8 +1068,12 @@ async def admin_update_order(order_id: str, body: AdminOrderUpdate, admin: dict 
     await db.orders.update_one({"_id": order["_id"]}, update_q)
     updated = await db.orders.find_one({"_id": order["_id"]})
     status_changed = body.status and body.status != order.get("status")
-    tracking_added = updates.get("tracking_id") and updates.get("tracking_id") != order.get("tracking_id")
-    if (status_changed and body.status in STATUS_HEADLINES) or (tracking_added and order.get("status") in ("shipped", "delivered")):
+    tracking_changed = any(
+        field in updates and updates[field] != order.get(field)
+        for field in ("tracking_id", "courier", "tracking_url", "delivery_option")
+    )
+    if ((status_changed and body.status in STATUS_HEADLINES)
+            or (tracking_changed and updated.get("status") in ("shipped", "delivered"))):
         try:
             subject = (f'{updated["order_no"]} — {STATUS_HEADLINES[body.status]}'
                        if status_changed and body.status in STATUS_HEADLINES

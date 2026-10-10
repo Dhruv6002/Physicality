@@ -14,6 +14,44 @@ import server
 
 
 class AdminOrderTests(unittest.IsolatedAsyncioTestCase):
+    async def test_promo_order_tracking_details_are_returned_to_the_customer(self):
+        order = {
+            "_id": ObjectId(),
+            "order_no": "PE-1002",
+            "user_id": "customer",
+            "items": [],
+            "subtotal": 6,
+            "discount": 0,
+            "total": 6,
+            "promo_applied": True,
+            "status": "shipped",
+            "payment_status": "paid",
+            "created_at": datetime.now(timezone.utc),
+            "tracking_id": "TRACK-123",
+            "courier": "Delhivery",
+            "tracking_url": "https://partner.example/track/123",
+        }
+        cursor = MagicMock()
+        cursor.sort.return_value = cursor
+        cursor.to_list = AsyncMock(return_value=[order])
+        db = SimpleNamespace(
+            orders=SimpleNamespace(
+                find=MagicMock(return_value=cursor),
+                find_one=AsyncMock(return_value=order),
+            )
+        )
+
+        with patch.object(server, "db", db):
+            response = await server.my_orders({"_id": "customer"})
+            tracked_order = await server.track_order(order_no="PE-1002", email="customer@example.com")
+
+        self.assertEqual(response[0]["tracking_id"], "TRACK-123")
+        self.assertEqual(response[0]["courier"], "Delhivery")
+        self.assertEqual(response[0]["tracking_url"], "https://partner.example/track/123")
+        self.assertEqual(tracked_order["tracking_id"], "TRACK-123")
+        self.assertEqual(tracked_order["courier"], "Delhivery")
+        self.assertEqual(tracked_order["tracking_url"], "https://partner.example/track/123")
+
     async def test_admin_order_list_handles_existing_tracking_number(self):
         order = {
             "_id": ObjectId(),
@@ -47,3 +85,23 @@ class AdminOrderTests(unittest.IsolatedAsyncioTestCase):
             "https://www.indiapost.gov.in/_layouts/15/dop.portal.tracking/"
             "trackconsignment.aspx?consignment=123%2F45%2667",
         )
+
+    def test_promo_shipment_email_includes_partner_tracking_details(self):
+        email = server.status_email_html(
+            {
+                "order_no": "PE-1003",
+                "promo_applied": True,
+                "shipping": {"name": "Customer"},
+                "items": [],
+                "tracking_id": "TRACK-123",
+                "courier": "Delhivery",
+                "tracking_url": "https://partner.example/track/123",
+                "delivery_option": "Express",
+            },
+            "shipped",
+        )
+
+        self.assertIn('href="https://partner.example/track/123"', email)
+        self.assertIn("TRACK-123", email)
+        self.assertIn("Delhivery", email)
+        self.assertIn("Express", email)

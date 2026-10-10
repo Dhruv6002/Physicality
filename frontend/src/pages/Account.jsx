@@ -116,17 +116,11 @@ export default function Account() {
                       Delivery option · {o.delivery_option}
                     </p>
                   )}
-                  {o.tracking_id ? (
+                  {o.tracking_id || o.tracking_url || o.courier ? (
                     <p className="font-mono-press text-xs text-ink" data-testid={`tracking-${o.order_no}`}>
-                      <span className="uppercase tracking-[0.2em] text-smoke">Tracking&nbsp;·&nbsp;</span>
-                      {o.tracking_url ? (
-                        <a href={o.tracking_url} target="_blank" rel="noreferrer" className="link-underline">{o.tracking_id}</a>
-                      ) : o.tracking_id}
+                      {(o.tracking_id || o.tracking_url) && <span className="uppercase tracking-[0.2em] text-smoke">Tracking&nbsp;·&nbsp;</span>}
+                      {o.tracking_url ? <a href={o.tracking_url} target="_blank" rel="noreferrer" className="link-underline">{o.tracking_id || "Track shipment"}</a> : o.tracking_id}
                       {o.courier && <span className="text-smoke"> — {o.courier}</span>}
-                    </p>
-                  ) : o.promo_applied ? (
-                    <p className="font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke" data-testid={`no-tracking-${o.order_no}`}>
-                      Press-code order — a tracking number is not issued; progress above shows its status.
                     </p>
                   ) : (
                     <p className="font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke" data-testid={`pending-tracking-${o.order_no}`}>

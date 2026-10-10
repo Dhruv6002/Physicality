@@ -14,10 +14,15 @@ export function getOfferFreebies(items) {
   for (const group of groups) {
     const eligible = items.filter((item) =>
       (item.kind === "poster" || item.kind === "custom") && group.matches(item));
-    const freeQty = Math.floor(eligible.reduce((sum, item) => sum + item.qty, 0) / group.threshold);
-    if (!freeQty) continue;
-    const recipient = [...eligible].sort((left, right) => left.unit_price - right.unit_price)[0];
-    rewards.push({ key: recipient.key, qty: freeQty, amount: recipient.unit_price * freeQty });
+    let eligibleQty = 0;
+    eligible.forEach((item) => {
+      const freeQty = Math.floor((eligibleQty + item.qty) / group.threshold)
+        - Math.floor(eligibleQty / group.threshold);
+      if (freeQty) {
+        rewards.push({ key: item.key, qty: freeQty, amount: item.unit_price * freeQty });
+      }
+      eligibleQty += item.qty;
+    });
   }
   return rewards;
 }

@@ -73,23 +73,30 @@ PLATFORMS = ["PlayStation 5", "PlayStation 4", "Xbox", "PC"]
 
 def offer_freebie_allocations(items: list[dict]) -> dict[int, int]:
     groups = [
-        (5, lambda item: item["size"] == "A4" and item["framing"] == "unframed"),
-        (6, lambda item: item["size"] == "A3" and item["framing"] == "unframed"),
-        (6, lambda item: item["size"] in ("A3", "A4") and item["framing"] == "framed"),
+        {"threshold": 4, "matches": lambda item: item["size"] == "A4" and item["framing"] == "unframed"},
+        {"threshold": 5, "matches": lambda item: item["size"] == "A3" and item["framing"] == "unframed"},
+        {"threshold": 5, "matches": lambda item: item["size"] in ("A3", "A4") and item["framing"] == "framed"},
     ]
     allocations = {}
-    for threshold, matches in groups:
-        eligible = [
-            (index, item) for index, item in enumerate(items)
-            if item.get("kind") in ("poster", "custom") and matches(item)
-        ]
-        eligible_count = 0
-        for recipient_index, item in eligible:
-            free_qty = ((eligible_count + item["qty"]) // threshold
-                        - eligible_count // threshold)
-            if free_qty:
-                allocations[recipient_index] = allocations.get(recipient_index, 0) + free_qty
-            eligible_count += item["qty"]
+    poster_count = 0
+    poster_count_at_last_reward = 0
+    for index, item in enumerate(items):
+        if item.get("kind") not in ("poster", "custom"):
+            continue
+        for _ in range(item["qty"]):
+            group = next(
+                (
+                    offer for offer in groups
+                    if offer["matches"](item)
+                    and poster_count - poster_count_at_last_reward >= offer["threshold"]
+                ),
+                None,
+            )
+            if group:
+                allocations[index] = allocations.get(index, 0) + 1
+                poster_count_at_last_reward = poster_count
+            else:
+                poster_count += 1
     return allocations
 ORDER_STATUSES = ["placed", "packed", "shipped", "delivered"]
 LOCAL_POSTER_SEED = [

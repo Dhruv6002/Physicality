@@ -6,24 +6,32 @@ export const PROMO_CODE = "tO+B3Pma)!:H3*6PsDtsA1Q@Q$b_XFUSy%syzm3Gmh5}iPz&[xR2<
 
 export function getOfferFreebies(items) {
   const groups = [
-    { threshold: 5, matches: (item) => item.size === "A4" && item.framing === "unframed" },
-    { threshold: 6, matches: (item) => item.size === "A3" && item.framing === "unframed" },
-    { threshold: 6, matches: (item) => ["A3", "A4"].includes(item.size) && item.framing === "framed" },
+    { threshold: 4, matches: (item) => item.size === "A4" && item.framing === "unframed" },
+    { threshold: 5, matches: (item) => item.size === "A3" && item.framing === "unframed" },
+    { threshold: 5, matches: (item) => ["A3", "A4"].includes(item.size) && item.framing === "framed" },
   ];
   const rewards = [];
-  for (const group of groups) {
-    const eligible = items.filter((item) =>
-      (item.kind === "poster" || item.kind === "custom") && group.matches(item));
-    let eligibleQty = 0;
-    eligible.forEach((item) => {
-      const freeQty = Math.floor((eligibleQty + item.qty) / group.threshold)
-        - Math.floor(eligibleQty / group.threshold);
-      if (freeQty) {
-        rewards.push({ key: item.key, qty: freeQty, amount: item.unit_price * freeQty });
+  let posterCount = 0;
+  let posterCountAtLastReward = 0;
+  items.forEach((item) => {
+    if (item.kind !== "poster" && item.kind !== "custom") return;
+    for (let unit = 0; unit < item.qty; unit += 1) {
+      const group = groups.find((offer) =>
+        offer.matches(item) && posterCount - posterCountAtLastReward >= offer.threshold);
+      if (group) {
+        const reward = rewards.find((entry) => entry.key === item.key);
+        if (reward) {
+          reward.qty += 1;
+          reward.amount += item.unit_price;
+        } else {
+          rewards.push({ key: item.key, qty: 1, amount: item.unit_price });
+        }
+        posterCountAtLastReward = posterCount;
+      } else {
+        posterCount += 1;
       }
-      eligibleQty += item.qty;
-    });
-  }
+    }
+  });
   return rewards;
 }
 

@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import Marquee from "react-fast-marquee";
 import { ArrowRight } from "lucide-react";
 import { Reveal } from "../components/Motion";
+import { DVD_CASE_IMAGE } from "../constants/productImages";
 
 const GAMES = [
   "Forza HORIZON 5",
@@ -113,6 +114,14 @@ export default function Home() {
               PlayStation 5, PlayStation 4, Xbox or PC. Custom cover art in a real disc box — ₹199, with a free A5 poster inside.
               Disc not included; the shelf presence is.
             </p>
+            <div className="mt-8 overflow-hidden border border-ink bg-paper2" data-testid="panel-cover-image">
+              <img
+                src={DVD_CASE_IMAGE}
+                alt="DVD cover box mock-up for a game collection"
+                className="block w-full h-auto object-cover"
+                loading="lazy"
+              />
+            </div>
             <Link to="/cover-art" data-testid="panel-cover-link" className="group/l mt-10 inline-flex items-center gap-2 font-mono-press text-xs uppercase tracking-[0.2em] text-ink link-underline">
               Order a case <ArrowRight size={13} className="transition-transform group-hover/l:translate-x-1" />
             </Link>

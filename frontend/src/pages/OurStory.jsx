@@ -20,12 +20,12 @@ const videos = [
   {
     title: "Inside our print process",
     src: "/videos/WhatsApp Video 2026-09-28 at 11.21.43 PM.mp4",
-    description: "A look at the detail, care, and precision behind every poster and box we produce for collectors.",
+    description: "This is how we turn game art into premium physical pieces that feel elevated and collectible.",
   },
   {
     title: "Our work, in motion",
     src: "/videos/WhatsApp Video 2026-09-28 at 11.22.00 PM.mp4",
-    description: "This is how we turn game art into premium physical pieces that feel elevated and collectible.",
+    description: "A look at the detail, care, and precision behind every poster and box we produce for collectors.",
   },
 ];
 

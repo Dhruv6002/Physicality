@@ -34,7 +34,7 @@ export default function Home() {
     <div data-testid="home-page">
       {/* HERO */}
       <section className="border-b border-ink" data-testid="hero-section">
-        <div className="mx-auto max-w-7xl px-5 md:px-8 py-8 md:py-12 grid grid-cols-1 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] gap-8 lg:gap-12 items-center">
+        <div className="mx-auto max-w-7xl px-5 md:px-8 py-8 md:py-12 grid grid-cols-1 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] gap-8 lg:gap-12 items-center">
           <div className="min-w-0 overflow-hidden border border-ink bg-ink aspect-[16/9]">
             <img
               src="/images/Poster.jpeg"

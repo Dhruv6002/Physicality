@@ -5,6 +5,7 @@ import { Trash2, UploadCloud } from "lucide-react";
 import api, { fileUrl, formatApiError, productImage } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { SectionHeading } from "../components/Motion";
+import { Dialog, DialogContent, DialogTitle } from "../components/ui/dialog";
 
 const STATUSES = ["placed", "packed", "shipped", "delivered"];
 const EMPTY_FORM = { title: "", game: "", edition: "", blurb: "", image_url: "", image_path: "" };
@@ -163,6 +164,7 @@ export default function Admin() {
   const [saving, setSaving] = useState("");
   const [fetching, setFetching] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [artworkPreview, setArtworkPreview] = useState(null);
 
   useEffect(() => {
     if (!loading && (!user || user.role !== "admin")) navigate("/");
@@ -292,12 +294,25 @@ export default function Admin() {
                           {o.items.map((i, k) => (
                             <li key={k} className="flex items-start gap-2 text-xs text-smoke leading-snug">
                               {i.kind === "custom" && i.image_path && (
-                                <img
-                                  src={fileUrl(i.image_path)}
-                                  alt="Customer's custom poster artwork"
-                                  className="w-12 h-16 shrink-0 border border-line object-cover"
+                                <button
+                                  type="button"
+                                  onClick={() => setArtworkPreview({
+                                    src: fileUrl(i.image_path),
+                                    title: `${o.order_no} — ${i.title}`,
+                                  })}
+                                  aria-label={`View custom poster artwork for ${o.order_no}`}
+                                  className="shrink-0 text-left"
                                   data-testid={`custom-artwork-${o.order_no}-${k}`}
-                                />
+                                >
+                                  <img
+                                    src={fileUrl(i.image_path)}
+                                    alt="Customer's custom poster artwork"
+                                    className="w-16 h-20 border border-line object-cover"
+                                  />
+                                  <span className="mt-1 block font-mono-press text-[9px] uppercase tracking-wider text-terra">
+                                    View artwork
+                                  </span>
+                                </button>
                               )}
                               <span>
                                 <span className="text-ink">{i.title}</span>
@@ -373,6 +388,18 @@ export default function Admin() {
               </table>
             </div>
           )}
+          <Dialog open={Boolean(artworkPreview)} onOpenChange={(open) => { if (!open) setArtworkPreview(null); }}>
+            <DialogContent className="w-[calc(100vw-2rem)] max-w-3xl border-ink bg-ink p-3 sm:p-4">
+              <DialogTitle className="sr-only">{artworkPreview?.title} full-size artwork</DialogTitle>
+              {artworkPreview && (
+                <img
+                  src={artworkPreview.src}
+                  alt={`${artworkPreview.title} full-size custom poster artwork`}
+                  className="max-h-[80vh] w-full object-contain"
+                />
+              )}
+            </DialogContent>
+          </Dialog>
         </>
       )}
     </div>

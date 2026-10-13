@@ -37,10 +37,11 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-5 md:px-8 py-8 md:py-12 grid grid-cols-1 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] gap-8 lg:gap-12 items-center">
           <div className="min-w-0 overflow-hidden border border-ink bg-ink aspect-[16/9]">
             <img
-              src="/images/Poster.jpeg"
+              src="/images/home-hero.jpg"
               alt="Physicality poster collection"
               className="block w-full h-full object-cover"
               fetchPriority="high"
+              decoding="async"
             />
           </div>
           <div className="min-w-0 py-4 lg:py-8">
@@ -96,10 +97,11 @@ export default function Home() {
             <p className="font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke">Posters</p>
             <div className="mt-6 overflow-hidden border border-ink bg-paper2">
               <img
-                src="/images/Premium%20Gaming%20Posters%20Gallery.png"
+                src="/images/home-posters-gallery.jpg"
                 alt="Premium gaming posters gallery"
                 className="block w-full h-auto object-cover"
                 loading="lazy"
+                decoding="async"
               />
             </div>
             <h2 className="font-serif-press text-4xl md:text-5xl tracking-tight leading-[1.05] text-ink mt-6">

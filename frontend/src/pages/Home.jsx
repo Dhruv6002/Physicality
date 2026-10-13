@@ -37,8 +37,8 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-5 md:px-8 py-8 md:py-12 grid grid-cols-1 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] gap-8 lg:gap-12 items-center">
           <div className="min-w-0 overflow-hidden border border-ink bg-ink aspect-[16/9]">
             <img
-              src="/images/WhatsApp%20Image%202026-10-07%20at%208.59.58%20PM.jpeg"
-              alt="Physicality poster collection and current poster offers"
+              src="/images/Poster.jpeg"
+              alt="Physicality poster collection"
               className="block w-full h-full object-cover"
               fetchPriority="high"
             />
@@ -94,6 +94,14 @@ export default function Home() {
         <div className="mx-auto max-w-7xl grid grid-cols-1 md:grid-cols-2 border-x border-ink">
           <Reveal className="px-6 md:px-12 py-20 md:py-28 border-b md:border-b-0 md:border-r border-ink group hover:bg-paper2 transition-colors duration-500">
             <p className="font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke">Posters</p>
+            <div className="mt-6 overflow-hidden border border-ink bg-paper2">
+              <img
+                src="/images/Premium%20Gaming%20Posters%20Gallery.png"
+                alt="Premium gaming posters gallery"
+                className="block w-full h-auto object-cover"
+                loading="lazy"
+              />
+            </div>
             <h2 className="font-serif-press text-4xl md:text-5xl tracking-tight leading-[1.05] text-ink mt-6">
               A frame for<br /><span className="italic">every fan.</span>
             </h2>

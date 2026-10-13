@@ -202,7 +202,7 @@ export default function Admin() {
     try {
       const { data } = await api.patch(`/admin/orders/${id}`, edits[id]);
       if (data.email_notification === "failed") {
-        toast.error("Order updated, but the customer email could not be sent. Check the email service configuration and logs.");
+        toast.error("Order updated");
       } else if (data.email_notification === "sent") {
         toast.success("Order updated — customer notification emailed");
       } else {

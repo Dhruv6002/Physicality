@@ -119,8 +119,19 @@ export default function Account() {
                   {o.tracking_id || o.tracking_url || o.courier ? (
                     <p className="font-mono-press text-xs text-ink" data-testid={`tracking-${o.order_no}`}>
                       {(o.tracking_id || o.tracking_url) && <span className="uppercase tracking-[0.2em] text-smoke">Tracking&nbsp;·&nbsp;</span>}
-                      {o.tracking_url ? <a href={o.tracking_url} target="_blank" rel="noreferrer" className="link-underline">{o.tracking_id || "Track shipment"}</a> : o.tracking_id}
+                      {o.tracking_id}
                       {o.courier && <span className="text-smoke"> — {o.courier}</span>}
+                      {o.tracking_url && (
+                        <a
+                          href={o.tracking_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="ml-3 inline-block bg-ink px-3 py-2 font-mono-press text-[10px] uppercase tracking-widest text-paper hover:bg-terra transition-colors"
+                          data-testid={`tracking-link-${o.order_no}`}
+                        >
+                          Track with courier
+                        </a>
+                      )}
                     </p>
                   ) : (
                     <p className="font-mono-press text-[10px] uppercase tracking-[0.2em] text-smoke" data-testid={`pending-tracking-${o.order_no}`}>

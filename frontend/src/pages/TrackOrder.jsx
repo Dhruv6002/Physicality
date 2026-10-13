@@ -90,8 +90,19 @@ export default function TrackOrder() {
           {order.tracking_id || order.tracking_url || order.courier ? (
             <p className="mt-4 font-mono-press text-xs text-ink">
               {(order.tracking_id || order.tracking_url) && <span className="uppercase tracking-[0.2em] text-smoke">Tracking · </span>}
-              {order.tracking_url ? <a href={order.tracking_url} target="_blank" rel="noreferrer" className="link-underline">{order.tracking_id || "Track shipment"}</a> : order.tracking_id}
+              {order.tracking_id}
               {order.courier && <span className="text-smoke"> — {order.courier}</span>}
+              {order.tracking_url && (
+                <a
+                  href={order.tracking_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="ml-3 inline-block bg-ink px-3 py-2 font-mono-press text-[10px] uppercase tracking-widest text-paper hover:bg-terra transition-colors"
+                  data-testid="tracking-partner-link"
+                >
+                  Track with courier
+                </a>
+              )}
             </p>
           ) : (
             <p className="mt-8 border-t border-line pt-5 font-mono-press text-[10px] uppercase tracking-[0.15em] text-smoke">

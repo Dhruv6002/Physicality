@@ -250,6 +250,7 @@ async def send_email(*, to: str, subject: str, html: str):
 
 
 STATUS_HEADLINES = {
+    "placed": "Your order is confirmed.",
     "packed": "Your order is packed.",
     "shipped": "Your order has shipped.",
     "delivered": "Your order was delivered.",
@@ -1090,9 +1091,15 @@ async def admin_update_order(order_id: str, body: AdminOrderUpdate, admin: dict 
                 subject=subject,
                 html=status_email_html(updated, updated["status"]))
             logger.info(f"Order update email sent for {updated['order_no']}")
+            email_notification = "sent"
         except Exception as e:
             logger.error(f"Status email failed for {updated.get('order_no')}: {e}")
-    return order_response(updated)
+            email_notification = "failed"
+    else:
+        email_notification = "not_required"
+    response = order_response(updated)
+    response["email_notification"] = email_notification
+    return response
 
 
 class ProductIn(BaseModel):

@@ -200,8 +200,14 @@ export default function Admin() {
   const save = async (id) => {
     setSaving(id);
     try {
-      await api.patch(`/admin/orders/${id}`, edits[id]);
-      toast.success("Order updated — customer emailed if the status moved");
+      const { data } = await api.patch(`/admin/orders/${id}`, edits[id]);
+      if (data.email_notification === "failed") {
+        toast.error("Order updated, but the customer email could not be sent. Check the email service configuration and logs.");
+      } else if (data.email_notification === "sent") {
+        toast.success("Order updated — customer notification emailed");
+      } else {
+        toast.success("Order updated");
+      }
       load();
     } catch (e) {
       toast.error(formatApiError(e));

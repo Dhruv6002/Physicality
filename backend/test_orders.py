@@ -14,6 +14,79 @@ import server
 
 
 class AdminOrderTests(unittest.IsolatedAsyncioTestCase):
+    async def test_order_status_changes_send_customer_email(self):
+        for status in ("placed", "packed", "shipped", "delivered"):
+            with self.subTest(status=status):
+                previous_status = "packed" if status == "placed" else "placed"
+                order = {
+                    "_id": ObjectId(),
+                    "order_no": "PE-1004",
+                    "user_email": "customer@example.com",
+                    "items": [{"title": "Custom poster", "size": "A4", "qty": 1}],
+                    "subtotal": 149,
+                    "discount": 0,
+                    "total": 149,
+                    "status": status,
+                    "payment_status": "paid",
+                    "created_at": datetime.now(timezone.utc),
+                    "shipping": {"name": "Customer"},
+                }
+                db = SimpleNamespace(
+                    orders=SimpleNamespace(
+                        find_one=AsyncMock(side_effect=[{**order, "status": previous_status}, order]),
+                        update_one=AsyncMock(),
+                    )
+                )
+                send_email = AsyncMock()
+
+                with (
+                    patch.object(server, "db", db),
+                    patch.object(server, "send_email", send_email),
+                ):
+                    response = await server.admin_update_order(
+                        str(order["_id"]),
+                        server.AdminOrderUpdate(status=status),
+                        {"_id": "admin"},
+                    )
+
+                self.assertEqual(response["email_notification"], "sent")
+                send_email.assert_awaited_once()
+                self.assertEqual(send_email.await_args.kwargs["to"], "customer@example.com")
+                self.assertIn(server.STATUS_HEADLINES[status], send_email.await_args.kwargs["subject"])
+
+    async def test_status_email_failure_is_reported_after_order_update(self):
+        order = {
+            "_id": ObjectId(),
+            "order_no": "PE-1005",
+            "user_email": "customer@example.com",
+            "items": [],
+            "subtotal": 149,
+            "discount": 0,
+            "total": 149,
+            "status": "packed",
+            "payment_status": "paid",
+            "created_at": datetime.now(timezone.utc),
+        }
+        db = SimpleNamespace(
+            orders=SimpleNamespace(
+                find_one=AsyncMock(side_effect=[{**order, "status": "placed"}, order]),
+                update_one=AsyncMock(),
+            )
+        )
+
+        with (
+            patch.object(server, "db", db),
+            patch.object(server, "send_email", new=AsyncMock(side_effect=RuntimeError("email unavailable"))),
+            self.assertLogs(server.logger, level="ERROR"),
+        ):
+            response = await server.admin_update_order(
+                str(order["_id"]),
+                server.AdminOrderUpdate(status="packed"),
+                {"_id": "admin"},
+            )
+
+        self.assertEqual(response["email_notification"], "failed")
+
     async def test_promo_order_tracking_details_are_returned_to_the_customer(self):
         order = {
             "_id": ObjectId(),
